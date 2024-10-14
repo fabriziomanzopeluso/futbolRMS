@@ -95,7 +95,7 @@ Para configurar y ejecutar la aplicación **Fútbol RMS**, sigue estos pasos:
 
 1. **Clonar el Repositorio**
    ```bash
-   git clone https://github.com/usuario/FutbolRMS.git
+   git clone [https://github.com/usuario/FutbolRMS.git](https://github.com/fabriziomanzopeluso/futbolRMS)
    cd FutbolRMS
    ```
 
