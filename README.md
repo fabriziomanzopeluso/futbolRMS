@@ -89,13 +89,12 @@ Para configurar y ejecutar la aplicación **Fútbol RMS**, sigue estos pasos:
 - **Sistema Operativo:** Se recomienda Linux (Ubuntu o derivadas).
 - **Compilador de C:** Asegúrate de tener instalado un compilador como `gcc`.
 - **MySQL:** Debes tener instalado y configurado MySQL.
-- **Biblioteca MySQL para C:** Instala la biblioteca `mysqlclient` para permitir la conexión de C con MySQL.
 
 ### Pasos de Instalación
 
 1. **Clonar el Repositorio**
    ```bash
-   git clone [https://github.com/usuario/FutbolRMS.git](https://github.com/fabriziomanzopeluso/futbolRMS)
+   git clone https://github.com/fabriziomanzopeluso/futbolRMS
    cd FutbolRMS
    ```
 
