@@ -1,2 +1,2 @@
-1;Juan;Solis;juan@example.com;admin;01/01/2022
+1;Juan;Solis;juan@gmail.com;admin;01/01/2022
 2;Maria;Gomez;maria@example.com;password;01/01/2023
