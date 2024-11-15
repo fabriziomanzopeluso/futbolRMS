@@ -89,21 +89,50 @@ int total_jugadores = 0;
 int total_roles = 0;
 int total_permisos = 0;
 
+void menuPrincipal(int id_rol);
+void iniciarSesion();
+//carga datos
 void cargarDatosUsuarios();
 void cargarDatosJugadores();
 void cargarDatosRoles();
 void cargarDatosPermisos();
-void menuPrincipal(int id_rol);
+
+//guarda datos
 void guardarUsuariosBin();
+
 int obtenerRolUsuario(int id_usuario);
-void agregarPermiso();
+//abm USUARIO
 void imprimirUsuarios();
-void iniciarSesion();
-void mostrarDatosUsuario(int id_usuario);
+void agregarUsuario();
+void buscarUsuario();
+void eliminarUsuario();
+void modificarUsuario();
 void abmUsuarios();
+void mostrarDatosUsuario(int id_usuario);
+
+//ABM JUGADOR
+void buscarJugador();
+void agregarJugador();
+void modificarJugador();
+void eliminarJugador();
 void abmJugadores();
-void abmRoles();
+
+//ABM PERMISO
+void agregarPermiso();
+void buscarPermiso();
+void modificarPermiso();
+void eliminarPermiso();
 void abmPermisos();
+
+//ABM ROLES
+void abmRoles();
+void agregarRol();
+void buscarRol();
+void modificarRol();
+void eliminarRol();
+
+
+
 
 int main()
 {
