@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
-typedef char cadena[200];
+#define largo_cadena 100
+
+typedef char cadena[largo_cadena];
 char *archivo_usuarios_txt = "../src/usuarios.txt";
 char *archivo_usuarios_bin = "../src/usuarios.bin";
 char *archivo_jugadores_txt = "../src/jugadores.txt";
@@ -107,7 +110,7 @@ void agregarUsuario();
 void buscarUsuario();
 void eliminarUsuario();
 void modificarUsuario();
-void abmUsuarios();
+void menuUsuariosABM();
 void mostrarDatosUsuario(int id_usuario);
 
 // ABM JUGADOR
@@ -115,7 +118,7 @@ void buscarJugador();
 void agregarJugador();
 void modificarJugador();
 void eliminarJugador();
-void abmJugadores();
+void menuJugadoresABM();
 
 // ABM PERMISO
 void agregarPermiso();
@@ -131,6 +134,12 @@ void buscarRol();
 void modificarRol();
 void eliminarRol();
 
+// Funciones auxiliares
+int asignarNumeroDeUsuario();
+int validarCadenaSinNumeros(char *cadena);
+int validarCadenaNumeros(char *cadena);
+int validarMail(char *email);
+
 int main()
 {
     cargarDatosUsuarios();
@@ -142,7 +151,7 @@ int main()
     iniciarSesion();
     return 0;
 }
-
+// ---------------------------------------CARGA DATOS---------------------------------------
 void guardarUsuariosBin()
 {
     FILE *file_bin = fopen(archivo_usuarios_bin, "wb");
@@ -164,7 +173,6 @@ void guardarUsuariosBin()
 
     fclose(file_bin);
 }
-
 void cargarDatosUsuarios()
 {
     FILE *file_bin = fopen(archivo_usuarios_bin, "rb");
@@ -229,8 +237,8 @@ void cargarDatosUsuarios()
         }
     }
 }
-
 void imprimirUsuarios()
+
 {
     FILE *file = fopen(archivo_usuarios_bin, "rb"); // Abrir el archivo binario en modo lectura
     if (file == NULL)
@@ -275,7 +283,18 @@ void imprimirUsuarios()
     fclose(file);
     printf("----------------------------------------------------------------------------------------------\n");
 }
-
+int obtenerRolUsuario(int id_usuario)
+{
+    // Aquí deberías implementar la logica para obtener el rol del usuario
+    for (int i = 0; i < total_usuarios; i++)
+    {
+        if (usuarios[i].id_usuario == id_usuario)
+        {
+            return 1; // Supongamos que el ID 1 es Admin
+        }
+    }
+    return -1; // Retornar -1 si no se encuentra el rol
+}
 void cargarDatosJugadores()
 {
     FILE *file = fopen(archivo_jugadores_txt, "r");
@@ -299,7 +318,6 @@ void cargarDatosJugadores()
     }
     fclose(file);
 }
-
 void cargarDatosRoles()
 {
     FILE *file = fopen(archivo_roles_txt, "r");
@@ -403,7 +421,7 @@ void menuPrincipal(int id_usuario)
         case 1:
             if (rol_usuario == 1)
             {
-                abmUsuarios(); // Llamar a la funcion ABM Usuarios
+                menuUsuariosABM(); // Llamar a la funcion ABM Usuarios
             }
             else
             {
@@ -413,7 +431,7 @@ void menuPrincipal(int id_usuario)
         case 2:
             if (rol_usuario == 1)
             {
-                abmJugadores(); // Llamar a la funcion ABM Jugadores
+                menuJugadoresABM(); // Llamar a la funcion ABM Jugadores
             }
             else
             {
@@ -454,19 +472,6 @@ void menuPrincipal(int id_usuario)
     } while (session_active); // Mantener el menu hasta que se cierre la sesion
 }
 
-int obtenerRolUsuario(int id_usuario)
-{
-    // Aquí deberías implementar la logica para obtener el rol del usuario
-    for (int i = 0; i < total_usuarios; i++)
-    {
-        if (usuarios[i].id_usuario == id_usuario)
-        {
-            return 1; // Supongamos que el ID 1 es Admin
-        }
-    }
-    return -1; // Retornar -1 si no se encuentra el rol
-}
-
 // --------------------------------------- ABM USUARIOS ---------------------------------------
 
 
@@ -490,7 +495,7 @@ void mostrarDatosUsuario(int id_usuario)
     }
 }
 
-void abmUsuarios()
+void menuUsuariosABM()
 {
     int opcion;
     do
@@ -527,26 +532,6 @@ void abmUsuarios()
         }
     } while (opcion != 5);
 }
-int asignarNumeroDeUsuario()
-{
-    // buscar los número de usuario y devolver un número que no fue usado
-    int id_disponible = 1;
-    int id_encontrado = 0;
-    while (!id_encontrado)
-    {
-        id_encontrado = 1;
-        for (int i = 0; i < total_usuarios; i++)
-        {
-            if (usuarios[i].id_usuario == id_disponible)
-            {
-                id_disponible++;
-                id_encontrado = 0;
-                break;
-            }
-        }
-    }
-    return id_disponible;
-}
 
 void agregarUsuario()
 {
@@ -562,13 +547,32 @@ void agregarUsuario()
 
         printf("Ingrese el nombre: ");
         scanf("%s", nuevo.nombre);
-        
+        while (!validarCadenaSinNumeros(nuevo.nombre) || strlen(nuevo.nombre) > largo_cadena)
+        {
+            printf("Nombre inválido. Ingrese el nombre nuevamente: ");
+            scanf("%s", nuevo.nombre);
+        }
         printf("Ingrese el apellido: ");
         scanf("%s", nuevo.apellido);
+        while (!validarCadenaSinNumeros(nuevo.apellido) || strlen(nuevo.apellido) > largo_cadena)
+        {
+            printf("Apellido inválido. Ingrese el apellido nuevamente: ");
+            scanf("%s", nuevo.apellido);
+        }
         printf("Ingrese el email: ");
         scanf("%s", nuevo.email);
+        while (!validarMail(nuevo.email) || strlen(nuevo.email) > largo_cadena)
+        {
+            printf("Email inválido. Ingrese el email nuevamente: ");
+            scanf("%s", nuevo.email);
+        }
         printf("Ingrese la contrasenia: ");
         scanf("%s", nuevo.contrasenia);
+        while (strlen(nuevo.contrasenia) > largo_cadena)
+        {
+            printf("Contrasenia inválida. Ingrese la contrasenia nuevamente: ");
+            scanf("%s", nuevo.contrasenia);
+        }
         nuevo.fecha_creacion.dia = tm.tm_mday;
         nuevo.fecha_creacion.mes = tm.tm_mon + 1;
         nuevo.fecha_creacion.anio = tm.tm_year + 1900;
@@ -585,7 +589,24 @@ void agregarUsuario()
         }
 
         // Escribir el usuario en el archivo binario
-        fwrite(&nuevo, sizeof(Usuario), 1, file);
+        if (fwrite(&nuevo, sizeof(Usuario), 1, file) != 1)
+        {
+            printf("Error al escribir el usuario en el archivo binario.\n");
+        }
+        else
+        {
+            printf("Usuario agregado al archivo binario.\n");
+        }
+        //Mostrar el usuario agregado
+        printf("\n=== Usuario Agregado ===\n");
+        printf("ID: %d\n", nuevo.id_usuario);
+        printf("Nombre: %s\n", nuevo.nombre);
+        printf("Apellido: %s\n", nuevo.apellido);
+        printf("Email: %s\n", nuevo.email);
+        printf("Fecha de Creacion: %02d/%02d/%04d\n",
+               nuevo.fecha_creacion.dia,
+               nuevo.fecha_creacion.mes,
+               nuevo.fecha_creacion.anio);
         fclose(file);
     }
     else
@@ -670,7 +691,7 @@ void eliminarUsuario()
 
 // --------------------------------------- ABM JUGADORES ---------------------------------------
 
-void abmJugadores()
+void menuJugadoresABM()
 {
     int opcion;
     do
@@ -1091,4 +1112,72 @@ void eliminarPermiso()
         }
     }
     printf("Permiso no encontrado.\n");
+}
+
+// --------------------------------------- FUNCIONES AUXILIARES ---------------------------------------
+
+int asignarNumeroDeUsuario()
+{
+    // buscar los número de usuario y devolver un número que no fue usado
+    int id_disponible = 1;
+    int id_encontrado = 0;
+    while (!id_encontrado)
+    {
+        id_encontrado = 1;
+        for (int i = 0; i < total_usuarios; i++)
+        {
+            if (usuarios[i].id_usuario == id_disponible)
+            {
+                id_disponible++;
+                id_encontrado = 0;
+                break;
+            }
+        }
+    }
+    return id_disponible;
+}
+
+int validarCadenaSinNumeros(char *cadena)
+{
+    for (size_t i = 0; i < strlen(cadena); i++)
+    {
+        if (isdigit(cadena[i]))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validarCadenaNumeros(char *cadena)
+{
+    for (size_t i = 0; i < strlen(cadena); i++)
+    {
+        if (!isdigit(cadena[i]))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validarMail(char *email)
+{
+    // Validar que el email tenga un formato correcto
+    // Ejemplo: usuario@dominio.xxx
+    // El email debe tener un @ y al menos un caracter antes y después
+    int tiene_arroba = 0;
+    int tiene_punto = 0;
+    for (size_t i = 0; i < strlen(email); i++)
+    {
+        if (email[i] == '@')
+        {
+            tiene_arroba = 1;
+        }
+        if (email[i] == '.')
+        {
+            tiene_punto = 1;
+        }
+    }
+    return tiene_arroba && tiene_punto;
 }
