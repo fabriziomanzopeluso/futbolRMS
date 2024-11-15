@@ -372,6 +372,7 @@ void iniciarSesion()
 }
 
 void menuPrincipal(int id_usuario)
+
 {
     int session_active = 1;                          // Indicar que la sesion esta activa
     int rol_usuario = obtenerRolUsuario(id_usuario); // Obtener rol del usuario
@@ -465,6 +466,9 @@ int obtenerRolUsuario(int id_usuario)
     }
     return -1; // Retornar -1 si no se encuentra el rol
 }
+
+// --------------------------------------- ABM USUARIOS ---------------------------------------
+
 
 void mostrarDatosUsuario(int id_usuario)
 {
@@ -664,6 +668,8 @@ void eliminarUsuario()
     printf("Usuario no encontrado.\n");
 }
 
+// --------------------------------------- ABM JUGADORES ---------------------------------------
+
 void abmJugadores()
 {
     int opcion;
@@ -808,6 +814,8 @@ void eliminarJugador()
     printf("Jugador no encontrado.\n");
 }
 
+// --------------------------------------- ABM ROLES ---------------------------------------
+
 void abmRoles()
 {
     // Similar a las funciones anteriores para manejar roles
@@ -944,6 +952,8 @@ void eliminarRol()
     }
     printf("Rol no encontrado.\n");
 }
+
+// --------------------------------------- ABM PERMISOS ---------------------------------------
 
 void abmPermisos()
 {
