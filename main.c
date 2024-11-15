@@ -474,7 +474,6 @@ void menuPrincipal(int id_usuario)
 
 // --------------------------------------- ABM USUARIOS ---------------------------------------
 
-
 void mostrarDatosUsuario(int id_usuario)
 {
     for (int i = 0; i < total_usuarios; i++)
@@ -503,9 +502,10 @@ void menuUsuariosABM()
         printf("\n=== ABM Usuarios ===\n");
         printf("1. Agregar Usuario\n");
         printf("2. Buscar Usuario\n");
-        printf("3. Modificar Usuario\n");
-        printf("4. Eliminar Usuario\n");
-        printf("5. Volver al Menu Principal\n");
+        printf("3. Listar Usuarios\n");
+        printf("4. Modificar Usuario\n");
+        printf("5. Eliminar Usuario\n");
+        printf("6. Volver al Menu Principal\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opcion);
 
@@ -518,19 +518,22 @@ void menuUsuariosABM()
             buscarUsuario();
             break;
         case 3:
-            modificarUsuario();
+            imprimirUsuarios();
             break;
         case 4:
-            eliminarUsuario();
+            modificarUsuario();
             break;
         case 5:
+            eliminarUsuario();
+            break;
+        case 6:
             printf("Volviendo al menu principal...\n");
             break;
         default:
             printf("Opcion no valida. Intente de nuevo.\n");
             break;
         }
-    } while (opcion != 5);
+    } while (opcion != 6);
 }
 
 void agregarUsuario()
@@ -584,20 +587,20 @@ void agregarUsuario()
         FILE *file = fopen(archivo_usuarios_bin, "ab"); // Modo binario de escritura al final
         if (file == NULL)
         {
-            printf("Error al abrir el archivo de usuarios.\n");
+            perror("Error al abrir el archivo de usuarios");
             return;
         }
 
         // Escribir el usuario en el archivo binario
         if (fwrite(&nuevo, sizeof(Usuario), 1, file) != 1)
         {
-            printf("Error al escribir el usuario en el archivo binario.\n");
+            perror("Error al escribir el usuario en el archivo binario");
         }
         else
         {
             printf("Usuario agregado al archivo binario.\n");
         }
-        //Mostrar el usuario agregado
+        // Mostrar el usuario agregado
         printf("\n=== Usuario Agregado ===\n");
         printf("ID: %d\n", nuevo.id_usuario);
         printf("Nombre: %s\n", nuevo.nombre);
