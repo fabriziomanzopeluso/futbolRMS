@@ -91,17 +91,17 @@ int total_permisos = 0;
 
 void menuPrincipal(int id_rol);
 void iniciarSesion();
-//carga datos
+// carga datos
 void cargarDatosUsuarios();
 void cargarDatosJugadores();
 void cargarDatosRoles();
 void cargarDatosPermisos();
 
-//guarda datos
+// guarda datos
 void guardarUsuariosBin();
 
 int obtenerRolUsuario(int id_usuario);
-//abm USUARIO
+// abm USUARIO
 void imprimirUsuarios();
 void agregarUsuario();
 void buscarUsuario();
@@ -110,29 +110,26 @@ void modificarUsuario();
 void abmUsuarios();
 void mostrarDatosUsuario(int id_usuario);
 
-//ABM JUGADOR
+// ABM JUGADOR
 void buscarJugador();
 void agregarJugador();
 void modificarJugador();
 void eliminarJugador();
 void abmJugadores();
 
-//ABM PERMISO
+// ABM PERMISO
 void agregarPermiso();
 void buscarPermiso();
 void modificarPermiso();
 void eliminarPermiso();
 void abmPermisos();
 
-//ABM ROLES
+// ABM ROLES
 void abmRoles();
 void agregarRol();
 void buscarRol();
 void modificarRol();
 void eliminarRol();
-
-
-
 
 int main()
 {
@@ -167,8 +164,6 @@ void guardarUsuariosBin()
 
     fclose(file_bin);
 }
-
-void guardarUsuariosBin();
 
 void cargarDatosUsuarios()
 {
@@ -235,7 +230,6 @@ void cargarDatosUsuarios()
     }
 }
 
-
 void imprimirUsuarios()
 {
     FILE *file = fopen(archivo_usuarios_bin, "rb"); // Abrir el archivo binario en modo lectura
@@ -281,7 +275,6 @@ void imprimirUsuarios()
     fclose(file);
     printf("----------------------------------------------------------------------------------------------\n");
 }
-
 
 void cargarDatosJugadores()
 {
@@ -350,27 +343,32 @@ void cargarDatosPermisos()
     }
     fclose(file);
 }
-
 void iniciarSesion()
 {
     cadena email;
     cadena contrasenia;
-    printf("Ingrese su email: ");
-    scanf("%s", email);
-    printf("Ingrese su contrasenia: ");
-    scanf("%s", contrasenia);
-
-    for (int i = 0; i < total_usuarios; i++)
+    int intentos = 0;
+    while (intentos < 3)
     {
-        if (strcmp(usuarios[i].email, email) == 0 && strcmp(usuarios[i].contrasenia, contrasenia) == 0)
+        printf("Ingrese su email: ");
+        scanf("%s", email);
+        printf("Ingrese su contrasenia: ");
+        scanf("%s", contrasenia);
+
+        for (int i = 0; i < total_usuarios; i++)
         {
-            printf("Inicio de sesion exitoso. Bienvenido, %s!\n", usuarios[i].nombre);
-            menuPrincipal(usuarios[i].id_usuario); // Llamar al menu principal con el id del usuario
-            return;
+            if (strcmp(usuarios[i].email, email) == 0 && strcmp(usuarios[i].contrasenia, contrasenia) == 0)
+            {
+                printf("Inicio de sesion exitoso. Bienvenido, %s!\n", usuarios[i].nombre);
+                menuPrincipal(usuarios[i].id_usuario);
+                return;
+            }
         }
+        intentos++;
+        printf("Email o contrasenia incorrectos. Intento %d de 3.\n", intentos);
     }
-    printf("Email o contrasenia incorrectos.\n");
-    exit(1); // Terminar el programa si la sesion falla
+    printf("Demasiados intentos fallidos. Saliendo...\n");
+    exit(1);
 }
 
 void menuPrincipal(int id_usuario)
@@ -525,6 +523,26 @@ void abmUsuarios()
         }
     } while (opcion != 5);
 }
+int asignarNumeroDeUsuario()
+{
+    // buscar los número de usuario y devolver un número que no fue usado
+    int id_disponible = 1;
+    int id_encontrado = 0;
+    while (!id_encontrado)
+    {
+        id_encontrado = 1;
+        for (int i = 0; i < total_usuarios; i++)
+        {
+            if (usuarios[i].id_usuario == id_disponible)
+            {
+                id_disponible++;
+                id_encontrado = 0;
+                break;
+            }
+        }
+    }
+    return id_disponible;
+}
 
 void agregarUsuario()
 {
@@ -534,10 +552,13 @@ void agregarUsuario()
         struct tm tm = *localtime(&t);
 
         Usuario nuevo;
-        printf("Ingrese el ID de usuario: ");
-        scanf("%d", &nuevo.id_usuario);
+
+        nuevo.id_usuario = asignarNumeroDeUsuario();
+        printf("ID asignado: %d\n", nuevo.id_usuario);
+
         printf("Ingrese el nombre: ");
         scanf("%s", nuevo.nombre);
+        
         printf("Ingrese el apellido: ");
         scanf("%s", nuevo.apellido);
         printf("Ingrese el email: ");
