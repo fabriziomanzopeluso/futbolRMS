@@ -94,6 +94,7 @@ void cargarDatosJugadores();
 void cargarDatosRoles();
 void cargarDatosPermisos();
 void menuPrincipal(int id_rol);
+void guardarUsuariosBin();
 int obtenerRolUsuario(int id_usuario);
 void agregarPermiso();
 void imprimirUsuarios();
@@ -107,14 +108,38 @@ void abmPermisos();
 int main()
 {
     cargarDatosUsuarios();
-    //cargarDatosJugadores();
-    //cargarDatosRoles();
-    //cargarDatosPermisos();
+    cargarDatosJugadores();
+    cargarDatosRoles();
+    cargarDatosPermisos();
 
     imprimirUsuarios();
     iniciarSesion();
     return 0;
 }
+
+void guardarUsuariosBin()
+{
+    FILE *file_bin = fopen(archivo_usuarios_bin, "wb");
+    if (file_bin == NULL)
+    {
+        printf("Error al abrir el archivo binario para guardar los datos.\n");
+        return;
+    }
+
+    if (fwrite(&total_usuarios, sizeof(int), 1, file_bin) != 1 ||
+        fwrite(usuarios, sizeof(Usuario), total_usuarios, file_bin) != (size_t)total_usuarios)
+    {
+        printf("Error al guardar los datos en el archivo binario.\n");
+    }
+    else
+    {
+        printf("Datos guardados en archivo binario con éxito.\n");
+    }
+
+    fclose(file_bin);
+}
+
+void guardarUsuariosBin();
 
 void cargarDatosUsuarios()
 {
@@ -181,28 +206,6 @@ void cargarDatosUsuarios()
     }
 }
 
-void guardarUsuariosBin()
-{
-    FILE *file_bin = fopen(archivo_usuarios_bin, "wb");
-    if (file_bin == NULL)
-    {
-        printf("Error al abrir el archivo binario para guardar los datos.\n");
-        return;
-    }
-
-    if (fwrite(&total_usuarios, sizeof(int), 1, file_bin) != 1 ||
-        fwrite(usuarios, sizeof(Usuario), total_usuarios, file_bin) != (size_t)total_usuarios)
-    {
-        printf("Error al guardar los datos en el archivo binario.\n");
-    }
-    else
-    {
-        printf("Datos guardados en archivo binario con éxito.\n");
-    }
-
-    fclose(file_bin);
-}
-
 
 void imprimirUsuarios()
 {
@@ -222,9 +225,9 @@ void imprimirUsuarios()
     }
 
     printf("\nUsuarios registrados:\n");
-    printf("------------------------------------------------------------------------------------------\n");
-    printf("| ID   | Nombre      | Apellido    | Email                  | Contraseña        | Fecha   |\n");
-    printf("------------------------------------------------------------------------------------------\n");
+    printf("----------------------------------------------------------------------------------------------\n");
+    printf("| ID   | Nombre      | Apellido    | Email                  | Contraseña        | Fecha      |\n");
+    printf("----------------------------------------------------------------------------------------------\n");
 
     Usuario usuario;
     for (int i = 0; i < total; i++)
@@ -235,7 +238,7 @@ void imprimirUsuarios()
             fclose(file);
             return;
         }
-        printf("| %-4d | %-10s | %-10s | %-20s | %-15s | %02d/%02d/%4d |\n",
+        printf("| %-4d | %-11s | %-11s | %-22s | %-17s | %02d/%02d/%4d |\n",
                usuario.id_usuario,
                usuario.nombre,
                usuario.apellido,
@@ -247,7 +250,7 @@ void imprimirUsuarios()
     }
 
     fclose(file);
-    printf("------------------------------------------------------------------------------------------\n");
+    printf("----------------------------------------------------------------------------------------------\n");
 }
 
 
