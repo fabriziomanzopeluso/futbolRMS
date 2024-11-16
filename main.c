@@ -157,21 +157,77 @@ void guardarUsuariosBin()
     FILE *file_bin = fopen(archivo_usuarios_bin, "wb");
     if (file_bin == NULL)
     {
-        printf("Error al abrir el archivo binario para guardar los datos.\n");
+        perror("Error al abrir el archivo binario para guardar los datos");
         return;
     }
 
-    if (fwrite(&total_usuarios, sizeof(int), 1, file_bin) != 1 ||
-        fwrite(usuarios, sizeof(Usuario), total_usuarios, file_bin) != (size_t)total_usuarios)
+    if (fwrite(&total_usuarios, sizeof(int), 1, file_bin) != 1)
     {
-        printf("Error al guardar los datos en el archivo binario.\n");
+        printf("Error al guardar el total de usuarios en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    if (fwrite(usuarios, sizeof(Usuario), total_usuarios, file_bin) != (size_t)total_usuarios)
+    {
+        printf("Error al guardar los datos de usuarios en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_usuarios_bin);
+    fclose(file_bin);
+}
+void cargarUsuariosDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_usuarios_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_usuarios_txt);
+        return;
+    }
+
+    total_usuarios = 0; // Reiniciar el contador de usuarios
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Usuario temp;
+        if (sscanf(linea, "%d;%49[^;];%49[^;];%49[^;];%49[^;];%d/%d/%d",
+                   &temp.id_usuario,
+                   temp.nombre,
+                   temp.apellido,
+                   temp.email,
+                   temp.contrasenia,
+                   &temp.fecha_creacion.dia,
+                   &temp.fecha_creacion.mes,
+                   &temp.fecha_creacion.anio) == 8)
+        {
+            if (total_usuarios < MAX_USUARIOS)
+            {
+                usuarios[total_usuarios++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de usuarios (%d).\n", MAX_USUARIOS);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_usuarios > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_usuarios_txt);
+        guardarUsuariosBin(); // Generar binario para futuros usos
     }
     else
     {
-        printf("Datos guardados en archivo binario con éxito.\n");
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_usuarios_txt);
     }
-
-    fclose(file_bin);
 }
 void cargarDatosUsuarios()
 {
@@ -186,55 +242,28 @@ void cargarDatosUsuarios()
             fclose(file_bin);
             return;
         }
+
+        if (total_usuarios > MAX_USUARIOS)
+        {
+            printf("Error: El archivo binario contiene más usuarios de los permitidos (%d).\n", MAX_USUARIOS);
+            fclose(file_bin);
+            return;
+        }
+
         if (fread(usuarios, sizeof(Usuario), total_usuarios, file_bin) != (size_t)total_usuarios)
         {
             printf("Error al leer los datos de usuarios desde el archivo binario.\n");
             fclose(file_bin);
             return;
         }
+
         fclose(file_bin);
-        printf("Datos cargados desde archivo binario con éxito.\n");
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_usuarios_bin);
     }
     else
     {
-        // Si no existe el archivo binario, cargar desde el archivo de texto
-        FILE *file_txt = fopen(archivo_usuarios_txt, "r");
-        if (file_txt == NULL)
-        {
-            printf("No se pudo abrir el archivo de texto de usuarios.\n");
-            return;
-        }
-
-        // Leer cada línea del archivo de texto
-        total_usuarios = 0; // Reiniciar el contador de usuarios
-        while (fscanf(file_txt, "%d;%[^;];%[^;];%[^;];%[^;];%d/%d/%d",
-                      &usuarios[total_usuarios].id_usuario,
-                      usuarios[total_usuarios].nombre,
-                      usuarios[total_usuarios].apellido,
-                      usuarios[total_usuarios].email,
-                      usuarios[total_usuarios].contrasenia,
-                      &usuarios[total_usuarios].fecha_creacion.dia,
-                      &usuarios[total_usuarios].fecha_creacion.mes,
-                      &usuarios[total_usuarios].fecha_creacion.anio) == 8)
-        {
-            total_usuarios++;
-            if (total_usuarios >= 100)
-            {
-                printf("Se alcanzó el límite máximo de usuarios (100).\n");
-                break;
-            }
-        }
-        fclose(file_txt);
-
-        if (total_usuarios > 0)
-        {
-            printf("Datos cargados desde archivo de texto con éxito.\n");
-            guardarUsuariosBin(); // Guardar datos cargados en el binario
-        }
-        else
-        {
-            printf("No se encontraron datos válidos en el archivo de texto.\n");
-        }
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarUsuariosDesdeTxt();
     }
 }
 void imprimirUsuarios()
