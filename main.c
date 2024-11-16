@@ -7,15 +7,14 @@
 
 #define largo_cadena 100
 
-typedef char cadena[largo_cadena];
 char *archivo_usuarios_txt = "../src/usuarios.txt";
-char *archivo_usuarios_bin = "../src/usuarios.bin";
+char *archivo_usuarios_bin = "../src/usuarios.dat";
 char *archivo_jugadores_txt = "../src/jugadores.txt";
-char *archivo_jugadores_bin = "../src/jugadores.bin";
+char *archivo_jugadores_bin = "../src/jugadores.dat";
 char *archivo_roles_txt = "../src/roles.txt";
-char *archivo_roles_bin = "../src/roles.bin";
+char *archivo_roles_bin = "../src/roles.dat";
 char *archivo_permisos_txt = "../src/permisos.txt";
-char *archivo_permisos_bin = "../src/permisos.bin";
+char *archivo_permisos_bin = "../src/permisos.dat";
 
 #define MAX_USUARIOS 100
 #define MAX_JUGADORES 100
@@ -162,7 +161,7 @@ void cargarUsuariosDesdeTxt()
     if (total_usuarios > 0)
     {
         printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_usuarios_txt);
-        guardarUsuariosBin(); // Generar binario para futuros usos
+        guardarUsuariosBin();
     }
     else
     {

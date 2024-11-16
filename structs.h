@@ -1,8 +1,7 @@
-// estructuras.h
 #ifndef structs
 #define structs
 
-typedef char cadena[100]; // Si esta definición no está ya incluida en otro lado
+typedef char cadena[100];
 
 typedef struct
 {
@@ -65,4 +64,4 @@ typedef struct
     int id_permiso;
 } Usuario_Permiso;
 
-#endif // structs
+#endif
