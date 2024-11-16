@@ -267,7 +267,6 @@ void cargarDatosUsuarios()
     }
 }
 void imprimirUsuarios()
-
 {
     FILE *file = fopen(archivo_usuarios_bin, "rb"); // Abrir el archivo binario en modo lectura
     if (file == NULL)
@@ -567,84 +566,90 @@ void menuUsuariosABM()
 
 void agregarUsuario()
 {
-    if (total_usuarios < 100)
-    { // Comprobar límite de usuarios
-        time_t t = time(NULL);
-        struct tm tm = *localtime(&t);
+    if (total_usuarios >= 100)
+    {
+        printf("Límite de usuarios alcanzado.\n");
+        return;
+    }
 
-        Usuario nuevo;
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
 
-        nuevo.id_usuario = asignarNumeroDeUsuario();
-        printf("ID asignado: %d\n", nuevo.id_usuario);
+    Usuario nuevo;
 
-        printf("Ingrese el nombre: ");
+    nuevo.id_usuario = asignarNumeroDeUsuario();
+    printf("ID asignado: %d\n", nuevo.id_usuario);
+
+    do
+    {
+        printf("Ingrese el nombre (sin números, máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.nombre);
-        while (!validarCadenaSinNumeros(nuevo.nombre) || strlen(nuevo.nombre) > largo_cadena)
-        {
-            printf("Nombre inválido. Ingrese el nombre nuevamente: ");
-            scanf("%s", nuevo.nombre);
-        }
-        printf("Ingrese el apellido: ");
+    } while (!validarCadenaSinNumeros(nuevo.nombre) || strlen(nuevo.nombre) > largo_cadena);
+
+    do
+    {
+        printf("Ingrese el apellido (sin números, máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.apellido);
-        while (!validarCadenaSinNumeros(nuevo.apellido) || strlen(nuevo.apellido) > largo_cadena)
-        {
-            printf("Apellido inválido. Ingrese el apellido nuevamente: ");
-            scanf("%s", nuevo.apellido);
-        }
-        printf("Ingrese el email: ");
+    } while (!validarCadenaSinNumeros(nuevo.apellido) || strlen(nuevo.apellido) > largo_cadena);
+
+    do
+    {
+        printf("Ingrese el email (formato válido, máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.email);
-        while (!validarMail(nuevo.email) || strlen(nuevo.email) > largo_cadena)
-        {
-            printf("Email inválido. Ingrese el email nuevamente: ");
-            scanf("%s", nuevo.email);
-        }
-        printf("Ingrese la contrasenia: ");
+    } while (!validarMail(nuevo.email) || strlen(nuevo.email) > largo_cadena);
+
+    do
+    {
+        printf("Ingrese la contraseña (máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.contrasenia);
-        while (strlen(nuevo.contrasenia) > largo_cadena)
-        {
-            printf("Contrasenia inválida. Ingrese la contrasenia nuevamente: ");
-            scanf("%s", nuevo.contrasenia);
-        }
-        nuevo.fecha_creacion.dia = tm.tm_mday;
-        nuevo.fecha_creacion.mes = tm.tm_mon + 1;
-        nuevo.fecha_creacion.anio = tm.tm_year + 1900;
+    } while (strlen(nuevo.contrasenia) > largo_cadena);
 
-        // Agregar el nuevo usuario al arreglo
-        usuarios[total_usuarios++] = nuevo;
-        printf("Usuario agregado con éxito.\n");
+    nuevo.fecha_creacion.dia = tm.tm_mday;
+    nuevo.fecha_creacion.mes = tm.tm_mon + 1;
+    nuevo.fecha_creacion.anio = tm.tm_year + 1900;
 
-        FILE *file = fopen(archivo_usuarios_bin, "ab"); // Modo binario de escritura al final
+    usuarios[total_usuarios++] = nuevo;
+
+    // Abrir binario en modo lectura-escritura
+    FILE *file = fopen(archivo_usuarios_bin, "rb+");
+    if (file == NULL)
+    {
+        // Si no existe, crearlo y escribir
+        file = fopen(archivo_usuarios_bin, "wb");
         if (file == NULL)
         {
-            perror("Error al abrir el archivo de usuarios");
+            perror("Error al crear el archivo binario");
             return;
         }
-
-        // Escribir el usuario en el archivo binario
-        if (fwrite(&nuevo, sizeof(Usuario), 1, file) != 1)
-        {
-            perror("Error al escribir el usuario en el archivo binario");
-        }
-        else
-        {
-            printf("Usuario agregado al archivo binario.\n");
-        }
-        // Mostrar el usuario agregado
-        printf("\n=== Usuario Agregado ===\n");
-        printf("ID: %d\n", nuevo.id_usuario);
-        printf("Nombre: %s\n", nuevo.nombre);
-        printf("Apellido: %s\n", nuevo.apellido);
-        printf("Email: %s\n", nuevo.email);
-        printf("Fecha de Creacion: %02d/%02d/%04d\n",
-               nuevo.fecha_creacion.dia,
-               nuevo.fecha_creacion.mes,
-               nuevo.fecha_creacion.anio);
-        fclose(file);
+        fwrite(&total_usuarios, sizeof(int), 1, file);
     }
     else
     {
-        printf("Límite de usuarios alcanzado.\n");
+        fseek(file, 0, SEEK_SET);
+        fwrite(&total_usuarios, sizeof(int), 1, file);
     }
+
+    fseek(file, 0, SEEK_END);
+    if (fwrite(&nuevo, sizeof(Usuario), 1, file) != 1)
+    {
+        perror("Error al escribir el usuario en el archivo binario");
+    }
+    else
+    {
+        printf("Usuario agregado al archivo binario.\n");
+    }
+
+    fclose(file);
+
+    printf("\n=== Usuario Agregado ===\n");
+    printf("ID: %d\n", nuevo.id_usuario);
+    printf("Nombre: %s\n", nuevo.nombre);
+    printf("Apellido: %s\n", nuevo.apellido);
+    printf("Email: %s\n", nuevo.email);
+    printf("Fecha de Creación: %02d/%02d/%04d\n",
+           nuevo.fecha_creacion.dia,
+           nuevo.fecha_creacion.mes,
+           nuevo.fecha_creacion.anio);
 }
 
 void buscarUsuario()
