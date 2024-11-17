@@ -549,7 +549,7 @@ void agregarUsuario()
 
     usuarios[total_usuarios++] = nuevo;
 
-    // Abrir binario en modo lectura-escritura
+    // abro el binario en modo lectura-escritura
     FILE *file = fopen(archivo_usuarios_bin, "rb+");
     if (file == NULL)
     {
