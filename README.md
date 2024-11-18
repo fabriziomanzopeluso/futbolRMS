@@ -86,7 +86,6 @@ Para configurar y ejecutar la aplicación **Fútbol RMS**, sigue estos pasos:
 
 ### Requisitos Previos
 
-- **Sistema Operativo:** Se recomienda Linux (Ubuntu o derivadas).
 - **Compilador de C:** Asegúrate de tener instalado un compilador como `gcc`.
 - **MySQL:** Debes tener instalado y configurado MySQL.
 

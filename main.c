@@ -311,9 +311,9 @@ void imprimirUsuarios()
     }
 
     printf("\nUsuarios registrados:\n");
-    printf("----------------------------------------------------------------------------------------------\n");
-    printf("| ID   | Nombre      | Apellido    | Email                  | Contraseña        | Fecha      |\n");
-    printf("----------------------------------------------------------------------------------------------\n");
+    printf("-----------------------------------------------------------------------------------------------\n");
+    printf("| ID   | Nombre      | Apellido    | Email                  | Contrasenia        | Fecha      |\n");
+    printf("-----------------------------------------------------------------------------------------------\n");
 
     Usuario usuario;
     for (int i = 0; i < total; i++)
@@ -324,7 +324,7 @@ void imprimirUsuarios()
             fclose(file);
             return;
         }
-        printf("| %-4d | %-11s | %-11s | %-22s | %-17s | %02d/%02d/%4d |\n",
+        printf("| %-4d | %-11s | %-11s | %-22s | %-18s | %02d/%02d/%4d |\n",
                usuario.id_usuario,
                usuario.nombre,
                usuario.apellido,
