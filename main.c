@@ -117,33 +117,43 @@ void guardarUsuariosBin()
     printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_usuarios_bin);
     fclose(file_bin);
 }
-void guardarUsuarioEnBinario(Usuario nuevo) {
+void guardarUsuarioEnBinario(Usuario nuevo)
+{
     FILE *file = fopen(archivo_usuarios_bin, "rb+");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         // Si no existe, crearlo y escribir
         file = fopen(archivo_usuarios_bin, "wb");
-        if (file == NULL) {
+        if (file == NULL)
+        {
             perror("Error al crear el archivo binario");
             return;
         }
         fwrite(&total_usuarios, sizeof(int), 1, file);
-    } else {
+    }
+    else
+    {
         fseek(file, 0, SEEK_SET);
         fwrite(&total_usuarios, sizeof(int), 1, file);
     }
 
     fseek(file, 0, SEEK_END);
-    if (fwrite(&nuevo, sizeof(Usuario), 1, file) != 1) {
+    if (fwrite(&nuevo, sizeof(Usuario), 1, file) != 1)
+    {
         perror("Error al escribir el usuario en el archivo binario");
-    } else {
+    }
+    else
+    {
         printf("Archivo binario de usuarios actualizado con éxito.\n");
     }
 
     fclose(file);
 }
-void guardarUsuarioModificadoEnBinario() {
+void guardarUsuarioModificadoEnBinario()
+{
     FILE *file = fopen(archivo_usuarios_bin, "rb+");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         perror("Error al abrir el archivo binario");
         return;
     }
@@ -151,7 +161,8 @@ void guardarUsuarioModificadoEnBinario() {
     fseek(file, 0, SEEK_SET);
     fwrite(&total_usuarios, sizeof(int), 1, file);
 
-    for (int i = 0; i < total_usuarios; i++) {
+    for (int i = 0; i < total_usuarios; i++)
+    {
         fwrite(&usuarios[i], sizeof(Usuario), 1, file);
     }
 
@@ -543,8 +554,10 @@ void menuUsuariosABM()
     } while (opcion != 6);
 }
 
-void agregarUsuario() {
-    if (total_usuarios >= 100) {
+void agregarUsuario()
+{
+    if (total_usuarios >= 100)
+    {
         printf("Límite de usuarios alcanzado.\n");
         return;
     }
@@ -557,22 +570,26 @@ void agregarUsuario() {
     nuevo.id_usuario = asignarNumeroDeUsuario();
     printf("ID asignado: %d\n", nuevo.id_usuario);
 
-    do {
+    do
+    {
         printf("Ingrese el nombre (sin números, máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.nombre);
     } while (!validarCadenaSinNumeros(nuevo.nombre) || strlen(nuevo.nombre) > largo_cadena);
 
-    do {
+    do
+    {
         printf("Ingrese el apellido (sin números, máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.apellido);
     } while (!validarCadenaSinNumeros(nuevo.apellido) || strlen(nuevo.apellido) > largo_cadena);
 
-    do {
+    do
+    {
         printf("Ingrese el email (formato válido, máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.email);
     } while (!validarMail(nuevo.email) || strlen(nuevo.email) > largo_cadena);
 
-    do {
+    do
+    {
         printf("Ingrese la contraseña (máx %d caracteres): ", largo_cadena);
         scanf("%s", nuevo.contrasenia);
     } while (strlen(nuevo.contrasenia) > largo_cadena);
@@ -663,12 +680,12 @@ void eliminarUsuario()
         {
             for (int j = i; j < total_usuarios - 1; j++)
             {
-                usuarios[j] = usuarios[j + 1];// la lógica usada para eliminar consiste en mover los elementos hacia atrás
+                usuarios[j] = usuarios[j + 1]; // la lógica usada para eliminar consiste en mover los elementos hacia atrás
             }
             total_usuarios--;
             printf("Usuario eliminado con éxito.\n");
 
-            guardarUsuarioEnBinario(usuarios[i]);
+            guardarUsuarioModificadoEnBinario();
             return;
         }
     }
