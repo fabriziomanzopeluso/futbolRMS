@@ -1,4 +1,4 @@
-Equipo A
-Equipo B
-Equipo C
-Equipo D
+1;Boca Juniors
+2;River Plate
+3;San Lorenzo
+4;Racing Club

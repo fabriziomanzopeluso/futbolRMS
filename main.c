@@ -15,21 +15,29 @@ char *archivo_roles_txt = "../src/roles.txt";
 char *archivo_roles_bin = "../src/roles.dat";
 char *archivo_permisos_txt = "../src/permisos.txt";
 char *archivo_permisos_bin = "../src/permisos.dat";
+char *archivo_equipos_txt = "../src/equipos.txt";
+char *archivo_equipos_bin = "../src/equipos.dat";
 
 #define MAX_USUARIOS 100
 #define MAX_JUGADORES 100
 #define MAX_ROLES 100
 #define MAX_PERMISOS 100
+#define MAX_USUARIOS_JUGADORES 100
+#define MAX_EQUIPOS 100
 
 Usuario usuarios[MAX_USUARIOS];
 Jugador jugadores[MAX_JUGADORES];
 Rol roles[MAX_ROLES];
 Permiso permisos[MAX_PERMISOS];
+Usuario_Jugador usuarios_jugadores[MAX_USUARIOS_JUGADORES];
+Equipo equipos[MAX_EQUIPOS];
 
 int total_usuarios = 0;
 int total_jugadores = 0;
 int total_roles = 0;
 int total_permisos = 0;
+int total_usuarios_jugadores = 0;
+int total_equipos = 0;
 
 void menuPrincipal(int id_rol);
 void iniciarSesion();
@@ -38,9 +46,19 @@ void cargarDatosUsuarios();
 void cargarDatosJugadores();
 void cargarDatosRoles();
 void cargarDatosPermisos();
+void cargarDatosEquipos();
 
 // guarda datos
 void guardarUsuariosBin();
+void guardarJugadoresBin();
+void guardarJugadorEnBinario(Jugador nuevo);
+void guardarJugadorModificadoEnBinario();
+void cargarJugadoresDesdeTxt();
+void imprimirJugadores();
+void guardarEquiposBin();
+void guardarEquipoEnBinario(Equipo nuevo);
+void cargarEquiposDesdeTxt();
+void imprimirEquipos();
 
 int obtenerRolUsuario(int id_usuario);
 // abm USUARIO
@@ -51,13 +69,19 @@ void eliminarUsuario();
 void modificarUsuario();
 void menuUsuariosABM();
 void mostrarDatosUsuario(int id_usuario);
+void asociarUsuarioJugador(int id_usuario);
+void mostrarDatosUsuarioJugador(int id_usuario);
 
 // ABM JUGADOR
 void buscarJugador();
-void agregarJugador();
+void agregarJugador(int id_usuario);
 void modificarJugador();
 void eliminarJugador();
 void menuJugadoresABM();
+void imprimirEquiposDisponibles();
+void imprimirPosicionesDisponibles();
+void imprimirUsuariosDisponibles();
+void listarJugadoresCompletos();
 
 // ABM PERMISO
 void agregarPermiso();
@@ -73,11 +97,21 @@ void buscarRol();
 void modificarRol();
 void eliminarRol();
 
+// ABM EQUIPOS
+void menuEquiposABM();
+void agregarEquipo();
+void buscarEquipo();
+void modificarEquipo();
+void eliminarEquipo();
+
 // Funciones auxiliares
 int asignarNumeroDeUsuario();
 int validarCadenaSinNumeros(char *cadena);
 int validarCadenaNumeros(char *cadena);
 int validarMail(char *email);
+void agregarUsuarioJugador(int id_usuario, int id_jugador);
+int esUsuarioJugador(int id_usuario);
+int asignarNumeroDeJugador();
 
 int main()
 {
@@ -85,8 +119,11 @@ int main()
     cargarDatosJugadores();
     cargarDatosRoles();
     cargarDatosPermisos();
+    cargarDatosEquipos();
 
     imprimirUsuarios();
+    imprimirJugadores();
+    imprimirEquipos();
     iniciarSesion();
     return 0;
 }
@@ -315,26 +352,40 @@ int obtenerRolUsuario(int id_usuario)
 }
 void cargarDatosJugadores()
 {
-    FILE *file = fopen(archivo_jugadores_txt, "r");
-    if (file == NULL)
-    {
-        printf("Error al abrir el archivo de jugadores.\n");
-        return;
-    }
+    FILE *file_bin = fopen(archivo_jugadores_bin, "rb");
 
-    while (fscanf(file, "%d;%d;%d;%[^;];%d;%d/%d/%d",
-                  &jugadores[total_jugadores].id_jugador,
-                  &jugadores[total_jugadores].id_usuario,
-                  &jugadores[total_jugadores].id_equipo,
-                  jugadores[total_jugadores].posicion,
-                  &jugadores[total_jugadores].numero_creacion,
-                  &jugadores[total_jugadores].fecha_creacion.dia,
-                  &jugadores[total_jugadores].fecha_creacion.mes,
-                  &jugadores[total_jugadores].fecha_creacion.anio) != EOF)
+    if (file_bin != NULL)
     {
-        total_jugadores++;
+        // Cargar desde archivo binario
+        if (fread(&total_jugadores, sizeof(int), 1, file_bin) != 1)
+        {
+            printf("Error al leer el total de jugadores desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        if (total_jugadores > MAX_JUGADORES)
+        {
+            printf("Error: El archivo binario contiene más jugadores de los permitidos (%d).\n", MAX_JUGADORES);
+            fclose(file_bin);
+            return;
+        }
+
+        if (fread(jugadores, sizeof(Jugador), total_jugadores, file_bin) != (size_t)total_jugadores)
+        {
+            printf("Error al leer los datos de jugadores desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        fclose(file_bin);
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_jugadores_bin);
     }
-    fclose(file);
+    else
+    {
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarJugadoresDesdeTxt();
+    }
 }
 void cargarDatosRoles()
 {
@@ -422,7 +473,8 @@ void menuPrincipal(int id_usuario)
             printf("2. ABM Jugadores\n");
             printf("3. ABM Roles\n");
             printf("4. ABM Permisos\n");
-            printf("5. Salir\n");
+            printf("5. ABM Equipos\n");
+            printf("6. Salir\n");
         }
         else
         {
@@ -480,6 +532,17 @@ void menuPrincipal(int id_usuario)
             }
             break;
         case 5:
+            if (rol_usuario == 1)
+            {
+                menuEquiposABM(); // Llamar a la funcion ABM Equipos
+            }
+            else
+            {
+                printf("Saliendo...\n");
+                session_active = 0; // Cerrar sesion
+            }
+            break;
+        case 6:
             printf("Saliendo...\n");
             session_active = 0; // Cerrar sesion
             break;
@@ -523,7 +586,8 @@ void menuUsuariosABM()
         printf("3. Listar Usuarios\n");
         printf("4. Modificar Usuario\n");
         printf("5. Eliminar Usuario\n");
-        printf("6. Volver al Menu Principal\n");
+        printf("6. Ver Datos Completos de Usuario\n");
+        printf("7. Volver al Menu Principal\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opcion);
 
@@ -545,13 +609,21 @@ void menuUsuariosABM()
             eliminarUsuario();
             break;
         case 6:
+            {
+                int id_usuario;
+                printf("Ingrese el ID del usuario: ");
+                scanf("%d", &id_usuario);
+                mostrarDatosUsuarioJugador(id_usuario);
+            }
+            break;
+        case 7:
             printf("Volviendo al menu principal...\n");
             break;
         default:
             printf("Opcion no valida. Intente de nuevo.\n");
             break;
         }
-    } while (opcion != 6);
+    } while (opcion != 7);
 }
 
 void agregarUsuario()
@@ -611,6 +683,88 @@ void agregarUsuario()
            nuevo.fecha_creacion.dia,
            nuevo.fecha_creacion.mes,
            nuevo.fecha_creacion.anio);
+
+    char opcion;
+    printf("¿Desea agregar un jugador asociado a este usuario? (s/n): ");
+    scanf(" %c", &opcion);
+    if (opcion == 's' || opcion == 'S')
+    {
+        agregarJugador(nuevo.id_usuario);
+    }
+}
+
+void asociarUsuarioJugador(int id_usuario)
+{
+    if (total_jugadores >= 100)
+    {
+        printf("Límite de jugadores alcanzado.\n");
+        return;
+    }
+
+    Jugador nuevo;
+    nuevo.id_usuario = id_usuario;
+    printf("Ingrese el ID del jugador: ");
+    scanf("%d", &nuevo.id_jugador);
+    printf("Ingrese el ID del equipo: ");
+    scanf("%d", &nuevo.id_equipo);
+    printf("Ingrese la posicion: ");
+    scanf("%s", nuevo.posicion);
+    printf("Ingrese el numero de camiseta: ");
+    scanf("%d", &nuevo.numero_de_camiseta);
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    nuevo.fecha_creacion.dia = tm.tm_mday,
+    nuevo.fecha_creacion.mes = tm.tm_mon + 1,
+    nuevo.fecha_creacion.anio = tm.tm_year + 1900;
+
+    jugadores[total_jugadores++] = nuevo;
+    agregarUsuarioJugador(nuevo.id_usuario, nuevo.id_jugador);
+    printf("Jugador asociado con éxito.\n");
+}
+
+void mostrarDatosUsuarioJugador(int id_usuario)
+{
+    for (int i = 0; i < total_usuarios; i++)
+    {
+        if (usuarios[i].id_usuario == id_usuario)
+        {
+            printf("\n=== DATOS DEL USUARIO ===\n");
+            printf("ID: %d\n", usuarios[i].id_usuario);
+            printf("Nombre: %s\n", usuarios[i].nombre);
+            printf("Apellido: %s\n", usuarios[i].apellido);
+            printf("Email: %s\n", usuarios[i].email);
+            printf("Fecha de Creacion: %02d/%02d/%04d\n",
+                   usuarios[i].fecha_creacion.dia,
+                   usuarios[i].fecha_creacion.mes,
+                   usuarios[i].fecha_creacion.anio);
+
+            for (int j = 0; j < total_usuarios_jugadores; j++)
+            {
+                if (usuarios_jugadores[j].id_usuario == id_usuario)
+                {
+                    for (int k = 0; k < total_jugadores; k++)
+                    {
+                        if (jugadores[k].id_jugador == usuarios_jugadores[j].id_jugador)
+                        {
+                            printf("\n=== DATOS DEL JUGADOR ===\n");
+                            printf("ID Jugador: %d\n", jugadores[k].id_jugador);
+                            printf("ID Equipo: %d\n", jugadores[k].id_equipo);
+                            printf("Posicion: %s\n", jugadores[k].posicion);
+                            printf("Numero de Camiseta: %d\n", jugadores[k].numero_de_camiseta);
+                            printf("Fecha de Creacion: %02d/%02d/%04d\n",
+                                   jugadores[k].fecha_creacion.dia,
+                                   jugadores[k].fecha_creacion.mes,
+                                   jugadores[k].fecha_creacion.anio);
+                            return;
+                        }
+                    }
+                }
+            }
+            printf("Este usuario no está asociado a ningún jugador.\n");
+            return;
+        }
+    }
+    printf("Usuario no encontrado.\n");
 }
 
 void buscarUsuario()
@@ -704,14 +858,20 @@ void menuJugadoresABM()
         printf("2. Buscar Jugador\n");
         printf("3. Modificar Jugador\n");
         printf("4. Eliminar Jugador\n");
-        printf("5. Volver al Menu Principal\n");
+        printf("5. Listar Jugadores\n");
+        printf("6. Volver al Menu Principal\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opcion);
 
         switch (opcion)
         {
         case 1:
-            agregarJugador();
+            {
+                int id_usuario;
+                printf("Ingrese el ID del usuario para asociar al jugador: ");
+                scanf("%d", &id_usuario);
+                agregarJugador(id_usuario);
+            }
             break;
         case 2:
             buscarJugador();
@@ -723,43 +883,187 @@ void menuJugadoresABM()
             eliminarJugador();
             break;
         case 5:
+            listarJugadoresCompletos();
+            break;
+        case 6:
             printf("Volviendo al menu principal...\n");
             break;
         default:
             printf("Opcion no valida. Intente de nuevo.\n");
             break;
         }
-    } while (opcion != 5);
+    } while (opcion != 6);
 }
 
-void agregarJugador()
+void listarJugadoresCompletos()
 {
-    if (total_jugadores < 100)
-    { // Comprobar límite de jugadores
-        Jugador nuevo;
-        printf("Ingrese el ID del jugador: ");
-        scanf("%d", &nuevo.id_jugador);
-        printf("Ingrese el ID del usuario: ");
-        scanf("%d", &nuevo.id_usuario);
-        printf("Ingrese el ID del equipo: ");
-        scanf("%d", &nuevo.id_equipo);
-        printf("Ingrese la posicion: ");
-        scanf("%s", nuevo.posicion);
-        printf("Ingrese el numero de creacion: ");
-        scanf("%d", &nuevo.numero_creacion);
-        time_t t = time(NULL);
-        struct tm tm = *localtime(&t);
-        nuevo.fecha_creacion.dia = tm.tm_mday,
-        nuevo.fecha_creacion.mes = tm.tm_mon + 1,
-        nuevo.fecha_creacion.anio = tm.tm_year + 1900;
-        // Agregar el nuevo jugador al arreglo
-        jugadores[total_jugadores++] = nuevo;
-        printf("Jugador agregado con exito.\n");
+    printf("\nJugadores registrados (información completa):\n");
+    printf("------------------------------------------------------------------------------------------------------\n");
+    printf("| ID   | Nombre         | Apellido         | Nombre Equipo | Posición      | Número de Camiseta | Fecha      |\n");
+    printf("------------------------------------------------------------------------------------------------------\n");
+
+    for (int i = 0; i < total_jugadores; i++)
+    {
+        char nombre_usuario[100] = "";
+        char apellido_usuario[100] = "";
+        char nombre_equipo[100] = "";
+
+        for (int j = 0; j < total_usuarios; j++)
+        {
+            if (usuarios[j].id_usuario == jugadores[i].id_usuario)
+            {
+                strcpy(nombre_usuario, usuarios[j].nombre);
+                strcpy(apellido_usuario, usuarios[j].apellido);
+                break;
+            }
+        }
+
+        for (int k = 0; k < total_equipos; k++)
+        {
+            if (equipos[k].id_equipo == jugadores[i].id_equipo)
+            {
+                strcpy(nombre_equipo, equipos[k].nombre_equipo);
+                break;
+            }
+        }
+
+        printf("| %-4d | %-14s | %-16s | %-13s | %-16s | %-19d | %02d/%02d/%4d |\n",
+               jugadores[i].id_jugador,
+               nombre_usuario,
+               apellido_usuario,
+               nombre_equipo,
+               jugadores[i].posicion,
+               jugadores[i].numero_de_camiseta,
+               jugadores[i].fecha_creacion.dia,
+               jugadores[i].fecha_creacion.mes,
+               jugadores[i].fecha_creacion.anio);
+    }
+
+    printf("------------------------------------------------------------------------------------------------------\n");
+}
+
+void agregarJugador(int id_usuario)
+{
+    if (total_jugadores >= 100)
+    {
+        printf("Límite de jugadores alcanzado.\n");
+        return;
+    }
+
+    imprimirUsuariosDisponibles();
+
+    printf("Ingrese el ID del usuario para asociar al jugador: ");
+    scanf("%d", &id_usuario);
+
+    Jugador nuevo;
+    nuevo.id_usuario = id_usuario;
+    nuevo.id_jugador = asignarNumeroDeJugador();
+    printf("ID asignado al jugador: %d\n", nuevo.id_jugador);
+
+    imprimirEquiposDisponibles();
+    printf("Ingrese el ID del equipo: ");
+    scanf("%d", &nuevo.id_equipo);
+
+    imprimirPosicionesDisponibles();
+    printf("Ingrese la posición: ");
+    scanf("%s", nuevo.posicion);
+
+    printf("Ingrese el número de camiseta: ");
+    scanf("%d", &nuevo.numero_de_camiseta);
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    nuevo.fecha_creacion.dia = tm.tm_mday;
+    nuevo.fecha_creacion.mes = tm.tm_mon + 1;
+    nuevo.fecha_creacion.anio = tm.tm_year + 1900;
+
+    jugadores[total_jugadores++] = nuevo;
+    agregarUsuarioJugador(nuevo.id_usuario, nuevo.id_jugador);
+    guardarJugadorEnBinario(nuevo);
+    printf("Jugador asociado con éxito.\n");
+}
+
+void imprimirUsuariosDisponibles()
+{
+    printf("\nUsuarios disponibles:\n");
+    printf("-------------------------------------------------------------\n");
+    printf("| ID   | Nombre      | Apellido    | Asociado a Jugador |\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < total_usuarios; i++)
+    {
+        int asociado = esUsuarioJugador(usuarios[i].id_usuario);
+        printf("| %-4d | %-11s | %-11s | %-17s |\n",
+               usuarios[i].id_usuario,
+               usuarios[i].nombre,
+               usuarios[i].apellido,
+               asociado ? "Sí" : "No");
+    }
+
+    printf("-------------------------------------------------------------\n");
+}
+
+int asignarNumeroDeJugador()
+{
+    int id_disponible = 1;
+    int id_encontrado = 0;
+    while (!id_encontrado)
+    {
+        id_encontrado = 1;
+        for (int i = 0; i < total_jugadores; i++)
+        {
+            if (jugadores[i].id_jugador == id_disponible)
+            {
+                id_disponible++;
+                id_encontrado = 0;
+                break;
+            }
+        }
+    }
+    return id_disponible;
+}
+
+void imprimirEquiposDisponibles()
+{
+    printf("Equipos disponibles:\n");
+    printf("1. Equipo A\n");
+    printf("2. Equipo B\n");
+    printf("3. Equipo C\n");
+}
+
+void imprimirPosicionesDisponibles()
+{
+    printf("Posiciones disponibles:\n");
+    printf("Arquero\n");
+    printf("Defensa\n");
+    printf("Mediocampista\n");
+    printf("Delantero\n");
+}
+
+void agregarUsuarioJugador(int id_usuario, int id_jugador)
+{
+    if (total_usuarios_jugadores < MAX_USUARIOS_JUGADORES)
+    {
+        usuarios_jugadores[total_usuarios_jugadores].id_usuario = id_usuario;
+        usuarios_jugadores[total_usuarios_jugadores].id_jugador = id_jugador;
+        total_usuarios_jugadores++;
     }
     else
     {
-        printf("Límite de jugadores alcanzado.\n");
+        printf("Límite de usuarios-jugadores alcanzado.\n");
     }
+}
+
+int esUsuarioJugador(int id_usuario)
+{
+    for (int j = 0; j < total_usuarios_jugadores; j++)
+    {
+        if (usuarios_jugadores[j].id_usuario == id_usuario)
+        {
+            return 1; // El usuario ya es un jugador
+        }
+    }
+    return 0; // El usuario no es un jugador
 }
 
 void buscarJugador()
@@ -776,7 +1080,7 @@ void buscarJugador()
             printf("ID Usuario: %d\n", jugadores[i].id_usuario);
             printf("ID Equipo: %d\n", jugadores[i].id_equipo);
             printf("Posicion: %s\n", jugadores[i].posicion);
-            printf("Numero de Creacion: %d\n", jugadores[i].numero_creacion);
+            printf("Numero de Camiseta: %d\n", jugadores[i].numero_de_camiseta);
             time_t t = time(NULL);
             struct tm tm = *localtime(&t);
             jugadores[i].fecha_creacion.dia = tm.tm_mday,
@@ -803,8 +1107,8 @@ void modificarJugador()
             scanf("%d", &jugadores[i].id_equipo);
             printf("Ingrese la nueva posicion (actual: %s): ", jugadores[i].posicion);
             scanf("%s", jugadores[i].posicion);
-            printf("Ingrese el nuevo numero de creacion (actual: %d): ", jugadores[i].numero_creacion);
-            scanf("%d", &jugadores[i].numero_creacion);
+            printf("Ingrese el nuevo numero de camiseta (actual: %d): ", jugadores[i].numero_de_camiseta);
+            scanf("%d", &jugadores[i].numero_de_camiseta);
             time_t t = time(NULL);
             struct tm tm = *localtime(&t);
             jugadores[i].fecha_creacion.dia = tm.tm_mday,
@@ -1117,6 +1421,306 @@ void eliminarPermiso()
     printf("Permiso no encontrado.\n");
 }
 
+// --------------------------------------- ABM EQUIPOS ---------------------------------------
+
+void cargarDatosEquipos()
+{
+    FILE *file_bin = fopen(archivo_equipos_bin, "rb");
+
+    if (file_bin != NULL)
+    {
+        // Cargar desde archivo binario
+        if (fread(&total_equipos, sizeof(int), 1, file_bin) != 1)
+        {
+            printf("Error al leer el total de equipos desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        if (total_equipos > MAX_EQUIPOS)
+        {
+            printf("Error: El archivo binario contiene más equipos de los permitidos (%d).\n", MAX_EQUIPOS);
+            fclose(file_bin);
+            return;
+        }
+
+        if (fread(equipos, sizeof(Equipo), total_equipos, file_bin) != (size_t)total_equipos)
+        {
+            printf("Error al leer los datos de equipos desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        fclose(file_bin);
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_equipos_bin);
+    }
+    else
+    {
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarEquiposDesdeTxt();
+    }
+}
+
+void guardarEquiposBin()
+{
+    FILE *file_bin = fopen(archivo_equipos_bin, "wb");
+    if (file_bin == NULL)
+    {
+        perror("Error al abrir el archivo binario para guardar los datos");
+        return;
+    }
+
+    if (fwrite(&total_equipos, sizeof(int), 1, file_bin) != 1)
+    {
+        printf("Error al guardar el total de equipos en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    if (fwrite(equipos, sizeof(Equipo), total_equipos, file_bin) != (size_t)total_equipos)
+    {
+        printf("Error al guardar los datos de equipos en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_equipos_bin);
+    fclose(file_bin);
+}
+
+void guardarEquipoEnBinario(Equipo nuevo)
+{
+    FILE *file = fopen(archivo_equipos_bin, "rb+");
+    if (file == NULL)
+    {
+        // Si no existe, crearlo y escribir
+        file = fopen(archivo_equipos_bin, "wb");
+        if (file == NULL)
+        {
+            perror("Error al crear el archivo binario");
+            return;
+        }
+        fwrite(&total_equipos, sizeof(int), 1, file);
+    }
+    else
+    {
+        fseek(file, 0, SEEK_SET);
+        fwrite(&total_equipos, sizeof(int), 1, file);
+    }
+
+    fseek(file, 0, SEEK_END);
+    if (fwrite(&nuevo, sizeof(Equipo), 1, file) != 1)
+    {
+        perror("Error al escribir el equipo en el archivo binario");
+    }
+    else
+    {
+        printf("Archivo binario de equipos actualizado con éxito.\n");
+    }
+
+    fclose(file);
+}
+
+void cargarEquiposDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_equipos_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_equipos_txt);
+        return;
+    }
+
+    total_equipos = 0; // Reiniciar el contador de equipos
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Equipo temp;
+        if (sscanf(linea, "%d;%99[^\n]", &temp.id_equipo, temp.nombre_equipo) == 2)
+        {
+            if (total_equipos < MAX_EQUIPOS)
+            {
+                equipos[total_equipos++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de equipos (%d).\n", MAX_EQUIPOS);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_equipos > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_equipos_txt);
+        guardarEquiposBin();
+    }
+    else
+    {
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_equipos_txt);
+    }
+}
+
+void imprimirEquipos()
+{
+    FILE *file = fopen(archivo_equipos_bin, "rb"); // Abrir el archivo binario en modo lectura
+    if (file == NULL)
+    {
+        printf("Error al abrir el archivo de equipos.\n");
+        return;
+    }
+
+    int total;
+    if (fread(&total, sizeof(int), 1, file) != 1)
+    {
+        printf("Error al leer el total de equipos desde el archivo binario.\n");
+        fclose(file);
+        return;
+    }
+
+    printf("\nEquipos registrados:\n");
+    printf("-----------------------------\n");
+    printf("| ID   | Nombre del Equipo  |\n");
+    printf("-----------------------------\n");
+
+    Equipo equipo;
+    for (int i = 0; i < total; i++)
+    {
+        if (fread(&equipo, sizeof(Equipo), 1, file) != 1)
+        {
+            printf("Error al leer los datos del equipo.\n");
+            fclose(file);
+            return;
+        }
+        printf("| %-4d | %-18s |\n", equipo.id_equipo, equipo.nombre_equipo);
+    }
+
+    fclose(file);
+    printf("-----------------------------\n");
+}
+
+void menuEquiposABM()
+{
+    int opcion;
+    do
+    {
+        printf("\n=== ABM Equipos ===\n");
+        printf("1. Agregar Equipo\n");
+        printf("2. Buscar Equipo\n");
+        printf("3. Modificar Equipo\n");
+        printf("4. Eliminar Equipo\n");
+        printf("5. Volver al Menu Principal\n");
+        printf("Seleccione una opcion: ");
+        scanf("%d", &opcion);
+
+        switch (opcion)
+        {
+        case 1:
+            agregarEquipo();
+            break;
+        case 2:
+            buscarEquipo();
+            break;
+        case 3:
+            modificarEquipo();
+            break;
+        case 4:
+            eliminarEquipo();
+            break;
+        case 5:
+            printf("Volviendo al menu principal...\n");
+            break;
+        default:
+            printf("Opcion no valida. Intente de nuevo.\n");
+            break;
+        }
+    } while (opcion != 5);
+}
+
+void agregarEquipo()
+{
+    if (total_equipos >= 100)
+    {
+        printf("Límite de equipos alcanzado.\n");
+        return;
+    }
+
+    Equipo nuevo;
+    printf("Ingrese el ID del equipo: ");
+    scanf("%d", &nuevo.id_equipo);
+    printf("Ingrese el nombre del equipo: ");
+    scanf("%s", nuevo.nombre_equipo);
+
+    equipos[total_equipos++] = nuevo;
+    guardarEquipoEnBinario(nuevo);
+    printf("Equipo agregado con éxito.\n");
+}
+
+void buscarEquipo()
+{
+    int id_equipo;
+    printf("Ingrese el ID del equipo a buscar: ");
+    scanf("%d", &id_equipo);
+    for (int i = 0; i < total_equipos; i++)
+    {
+        if (equipos[i].id_equipo == id_equipo)
+        {
+            printf("\n=== Equipo Encontrado ===\n");
+            printf("ID: %d\n", equipos[i].id_equipo);
+            printf("Nombre del Equipo: %s\n", equipos[i].nombre_equipo);
+            return;
+        }
+    }
+    printf("Equipo no encontrado.\n");
+}
+
+void modificarEquipo()
+{
+    int id_equipo;
+    printf("Ingrese el ID del equipo a modificar: ");
+    scanf("%d", &id_equipo);
+    for (int i = 0; i < total_equipos; i++)
+    {
+        if (equipos[i].id_equipo == id_equipo)
+        {
+            printf("Ingrese el nuevo nombre del equipo (actual: %s): ", equipos[i].nombre_equipo);
+            scanf("%s", equipos[i].nombre_equipo);
+            printf("Equipo modificado con éxito.\n");
+
+            guardarEquiposBin();
+            return;
+        }
+    }
+    printf("Equipo no encontrado.\n");
+}
+
+void eliminarEquipo()
+{
+    int id_equipo;
+    printf("Ingrese el ID del equipo a eliminar: ");
+    scanf("%d", &id_equipo);
+    for (int i = 0; i < total_equipos; i++)
+    {
+        if (equipos[i].id_equipo == id_equipo)
+        {
+            for (int j = i; j < total_equipos - 1; j++)
+            {
+                equipos[j] = equipos[j + 1]; // Mover los elementos hacia atrás
+            }
+            total_equipos--; // Disminuir el contador de equipos
+            printf("Equipo eliminado con éxito.\n");
+
+            guardarEquiposBin();
+            return;
+        }
+    }
+    printf("Equipo no encontrado.\n");
+}
+
 // --------------------------------------- FUNCIONES AUXILIARES ---------------------------------------
 
 int asignarNumeroDeUsuario()
@@ -1183,4 +1787,180 @@ int validarMail(char *email)
         }
     }
     return tiene_arroba && tiene_punto;
+}
+void guardarJugadoresBin()
+{
+    FILE *file_bin = fopen(archivo_jugadores_bin, "wb");
+    if (file_bin == NULL)
+    {
+        perror("Error al abrir el archivo binario para guardar los datos");
+        return;
+    }
+
+    if (fwrite(&total_jugadores, sizeof(int), 1, file_bin) != 1)
+    {
+        printf("Error al guardar el total de jugadores en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    if (fwrite(jugadores, sizeof(Jugador), total_jugadores, file_bin) != (size_t)total_jugadores)
+    {
+        printf("Error al guardar los datos de jugadores en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_jugadores_bin);
+    fclose(file_bin);
+}
+
+void guardarJugadorEnBinario(Jugador nuevo)
+{
+    FILE *file = fopen(archivo_jugadores_bin, "rb+");
+    if (file == NULL)
+    {
+        // Si no existe, crearlo y escribir
+        file = fopen(archivo_jugadores_bin, "wb");
+        if (file == NULL)
+        {
+            perror("Error al crear el archivo binario");
+            return;
+        }
+        fwrite(&total_jugadores, sizeof(int), 1, file);
+    }
+    else
+    {
+        fseek(file, 0, SEEK_SET);
+        fwrite(&total_jugadores, sizeof(int), 1, file);
+    }
+
+    fseek(file, 0, SEEK_END);
+    if (fwrite(&nuevo, sizeof(Jugador), 1, file) != 1)
+    {
+        perror("Error al escribir el jugador en el archivo binario");
+    }
+    else
+    {
+        printf("Archivo binario de jugadores actualizado con éxito.\n");
+    }
+
+    fclose(file);
+}
+
+void guardarJugadorModificadoEnBinario()
+{
+    FILE *file = fopen(archivo_jugadores_bin, "rb+");
+    if (file == NULL)
+    {
+        perror("Error al abrir el archivo binario");
+        return;
+    }
+
+    fseek(file, 0, SEEK_SET);
+    fwrite(&total_jugadores, sizeof(int), 1, file);
+
+    for (int i = 0; i < total_jugadores; i++)
+    {
+        fwrite(&jugadores[i], sizeof(Jugador), 1, file);
+    }
+
+    fclose(file);
+}
+
+void cargarJugadoresDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_jugadores_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_jugadores_txt);
+        return;
+    }
+
+    total_jugadores = 0; // Reiniciar el contador de jugadores
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Jugador temp;
+        if (sscanf(linea, "%d;%d;%d;%49[^;];%d;%d/%d/%d",
+                   &temp.id_jugador,
+                   &temp.id_usuario,
+                   &temp.id_equipo,
+                   temp.posicion,
+                   &temp.numero_de_camiseta,
+                   &temp.fecha_creacion.dia,
+                   &temp.fecha_creacion.mes,
+                   &temp.fecha_creacion.anio) == 8)
+        {
+            if (total_jugadores < MAX_JUGADORES)
+            {
+                jugadores[total_jugadores++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de jugadores (%d).\n", MAX_JUGADORES);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_jugadores > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_jugadores_txt);
+        guardarJugadoresBin();
+    }
+    else
+    {
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_jugadores_txt);
+    }
+}
+void imprimirJugadores()
+{
+    FILE *file = fopen(archivo_jugadores_bin, "rb"); // Abrir el archivo binario en modo lectura
+    if (file == NULL)
+    {
+        printf("Error al abrir el archivo de jugadores.\n");
+        return;
+    }
+
+    int total;
+    if (fread(&total, sizeof(int), 1, file) != 1)
+    {
+        printf("Error al leer el total de jugadores desde el archivo binario.\n");
+        fclose(file);
+        return;
+    }
+
+    printf("\nJugadores registrados:\n");
+    printf("------------------------------------------------------------------------------------\n");
+    printf("| ID   | ID Usuario | ID Equipo | Posición      | Número de Camiseta  | Fecha      |\n");
+    printf("------------------------------------------------------------------------------------\n");
+
+    Jugador jugador;
+    for (int i = 0; i < total; i++)
+    {
+        if (fread(&jugador, sizeof(Jugador), 1, file) != 1)
+        {
+            printf("Error al leer los datos del jugador.\n");
+            fclose(file);
+            return;
+        }
+        printf("| %-4d | %-10d | %-9d | %-13s | %-19d | %02d/%02d/%4d |\n",
+               jugador.id_jugador,
+               jugador.id_usuario,
+               jugador.id_equipo,
+               jugador.posicion,
+               jugador.numero_de_camiseta,
+               jugador.fecha_creacion.dia,
+               jugador.fecha_creacion.mes,
+               jugador.fecha_creacion.anio);
+    }
+
+    fclose(file);
+    printf("----------------------------------------------------------------------------------------------\n");
 }

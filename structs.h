@@ -26,7 +26,7 @@ typedef struct
     int id_usuario;
     int id_equipo;
     cadena posicion;
-    int numero_creacion;
+    int numero_de_camiseta;
     Fecha fecha_creacion;
 } Jugador;
 
@@ -63,5 +63,17 @@ typedef struct
     int id_usuario;
     int id_permiso;
 } Usuario_Permiso;
+
+typedef struct
+{
+    int id_usuario;
+    int id_jugador;
+} Usuario_Jugador;
+
+typedef struct
+{
+    int id_equipo;
+    cadena nombre_equipo;
+} Equipo;
 
 #endif
