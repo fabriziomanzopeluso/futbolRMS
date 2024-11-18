@@ -141,6 +141,22 @@ void guardarUsuarioEnBinario(Usuario nuevo) {
 
     fclose(file);
 }
+void guardarUsuarioModificadoEnBinario() {
+    FILE *file = fopen(archivo_usuarios_bin, "rb+");
+    if (file == NULL) {
+        perror("Error al abrir el archivo binario");
+        return;
+    }
+
+    fseek(file, 0, SEEK_SET);
+    fwrite(&total_usuarios, sizeof(int), 1, file);
+
+    for (int i = 0; i < total_usuarios; i++) {
+        fwrite(&usuarios[i], sizeof(Usuario), 1, file);
+    }
+
+    fclose(file);
+}
 void cargarUsuariosDesdeTxt()
 {
     FILE *file_txt = fopen(archivo_usuarios_txt, "r");
@@ -627,6 +643,9 @@ void modificarUsuario()
             usuarios[i].fecha_creacion.mes = tm.tm_mon + 1,
             usuarios[i].fecha_creacion.anio = tm.tm_year + 1900;
             printf("Usuario modificado con exito.\n");
+
+            guardarUsuarioModificadoEnBinario();
+
             return;
         }
     }
