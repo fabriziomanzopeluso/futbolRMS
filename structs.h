@@ -42,6 +42,18 @@ typedef struct
 {
     int id_usuario;
     int id_rol;
+} Usuario_Rol;
+
+typedef struct
+{
+    int id_usuario;
+    int id_permiso;
+} Usuario_Permiso;
+
+typedef struct
+{
+    int id_usuario;
+    int id_rol;
 } Usuario_Role;
 
 typedef struct
@@ -57,12 +69,6 @@ typedef struct
     int id_rol;
     int id_permiso;
 } Role_Permiso;
-
-typedef struct
-{
-    int id_usuario;
-    int id_permiso;
-} Usuario_Permiso;
 
 typedef struct
 {
