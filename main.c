@@ -24,8 +24,6 @@ char *archivo_equipos_bin = "../src/ArchivosBinarios/equipos.dat";
 #define MAX_PERMISOS 100
 #define MAX_USUARIOS_JUGADORES 100
 #define MAX_EQUIPOS 100
-#define MAX_USUARIOS_ROLES 100
-#define MAX_USUARIOS_PERMISOS 100
 
 Usuario usuarios[MAX_USUARIOS];
 Jugador jugadores[MAX_JUGADORES];
@@ -33,8 +31,6 @@ Rol roles[MAX_ROLES];
 Permiso permisos[MAX_PERMISOS];
 Usuario_Jugador usuarios_jugadores[MAX_USUARIOS_JUGADORES];
 Equipo equipos[MAX_EQUIPOS];
-Usuario_Rol usuarios_roles[MAX_USUARIOS_ROLES];
-Usuario_Permiso usuarios_permisos[MAX_USUARIOS_PERMISOS];
 
 int total_usuarios = 0;
 int total_jugadores = 0;
@@ -42,8 +38,6 @@ int total_roles = 0;
 int total_permisos = 0;
 int total_usuarios_jugadores = 0;
 int total_equipos = 0;
-int total_usuarios_roles = 0;
-int total_usuarios_permisos = 0;
 
 void menuPrincipal(int id_rol);
 void iniciarSesion();
@@ -53,8 +47,6 @@ void cargarDatosJugadores();
 void cargarDatosRoles();
 void cargarDatosPermisos();
 void cargarDatosEquipos();
-void cargarDatosUsuariosRoles();
-void cargarDatosUsuariosPermisos();
 
 // guarda datos
 void guardarUsuariosBin();
@@ -67,11 +59,8 @@ void guardarEquiposBin();
 void guardarEquipoEnBinario(Equipo nuevo);
 void cargarEquiposDesdeTxt();
 void imprimirEquipos();
-void guardarUsuariosRolesBin();
-void guardarUsuariosPermisosBin();
 
 int obtenerRolUsuario(int id_usuario);
-int tienePermiso(int id_usuario, int id_permiso);
 // abm USUARIO
 void imprimirUsuarios();
 void agregarUsuario();
@@ -132,8 +121,6 @@ int main()
     cargarDatosRoles();
     cargarDatosPermisos();
     cargarDatosEquipos();
-    cargarDatosUsuariosRoles();
-    cargarDatosUsuariosPermisos();
 
     imprimirUsuarios();
     imprimirJugadores();
@@ -354,25 +341,15 @@ void imprimirUsuarios()
 }
 int obtenerRolUsuario(int id_usuario)
 {
-    for (int i = 0; i < total_usuarios_roles; i++)
+    // Aqui deberias implementar la logica para obtener el rol del usuario
+    for (int i = 0; i < total_usuarios; i++)
     {
-        if (usuarios_roles[i].id_usuario == id_usuario)
+        if (usuarios[i].id_usuario == id_usuario)
         {
-            return usuarios_roles[i].id_rol;
+            return 1; // Supongamos que el ID 1 es Admin
         }
     }
     return -1; // Retornar -1 si no se encuentra el rol
-}
-int tienePermiso(int id_usuario, int id_permiso)
-{
-    for (int i = 0; i < total_usuarios_permisos; i++)
-    {
-        if (usuarios_permisos[i].id_usuario == id_usuario && usuarios_permisos[i].id_permiso == id_permiso)
-        {
-            return 1;
-        }
-    }
-    return 0;
 }
 void cargarDatosJugadores()
 {
@@ -513,57 +490,57 @@ void menuPrincipal(int id_usuario)
         switch (opcion)
         {
         case 1:
-            if (rol_usuario == 1 || tienePermiso(id_usuario, 1))
+            if (rol_usuario == 1)
             {
-                menuUsuariosABM();
+                menuUsuariosABM(); // Llamar a la funcion ABM Usuarios
             }
             else
             {
-                mostrarDatosUsuarioJugador(id_usuario);
+                mostrarDatosUsuario(id_usuario);
             }
             break;
         case 2:
-            if (rol_usuario == 1 || tienePermiso(id_usuario, 2))
+            if (rol_usuario == 1)
             {
-                menuJugadoresABM();
+                menuJugadoresABM(); // Llamar a la funcion ABM Jugadores
             }
             else
             {
                 printf("Saliendo...\n");
-                session_active = 0;
+                session_active = 0; // Cerrar sesion
             }
             break;
         case 3:
-            if (rol_usuario == 1 || tienePermiso(id_usuario, 3))
+            if (rol_usuario == 1)
             {
-                abmRoles();
+                abmRoles(); // Llamar a la funcion ABM Roles
             }
             else
             {
                 printf("Saliendo...\n");
-                session_active = 0;
+                session_active = 0; // Cerrar sesion
             }
             break;
         case 4:
-            if (rol_usuario == 1 || tienePermiso(id_usuario, 4))
+            if (rol_usuario == 1)
             {
-                abmPermisos();
+                abmPermisos(); // Llamar a la funcion ABM Permisos
             }
             else
             {
                 printf("Saliendo...\n");
-                session_active = 0;
+                session_active = 0; // Cerrar sesion
             }
             break;
         case 5:
-            if (rol_usuario == 1 || tienePermiso(id_usuario, 5))
+            if (rol_usuario == 1)
             {
-                menuEquiposABM();
+                menuEquiposABM(); // Llamar a la funcion ABM Equipos
             }
             else
             {
                 printf("Saliendo...\n");
-                session_active = 0;
+                session_active = 0; // Cerrar sesion
             }
             break;
         case 6:
@@ -2068,59 +2045,4 @@ void imprimirJugadores()
 
     fclose(file);
     printf("----------------------------------------------------------------------------------------------\n");
-}
-void cargarDatosUsuariosRoles()
-{
-    FILE *file = fopen("../src/ArchivosBinarios/usuarios_roles.dat", "rb");
-    if (file == NULL)
-    {
-        printf("Error al abrir el archivo de usuarios_roles.\n");
-        return;
-    }
-
-    fread(&total_usuarios_roles, sizeof(int), 1, file);
-    fread(usuarios_roles, sizeof(Usuario_Rol), total_usuarios_roles, file);
-    fclose(file);
-}
-
-void cargarDatosUsuariosPermisos()
-{
-    FILE *file = fopen("../src/ArchivosBinarios/usuarios_permisos.dat", "rb");
-    if (file == NULL)
-    {
-        printf("Error al abrir el archivo de usuarios_permisos.\n");
-        return;
-    }
-
-    fread(&total_usuarios_permisos, sizeof(int), 1, file);
-    fread(usuarios_permisos, sizeof(Usuario_Permiso), total_usuarios_permisos, file);
-    fclose(file);
-}
-
-void guardarUsuariosRolesBin()
-{
-    FILE *file = fopen("../src/ArchivosBinarios/usuarios_roles.dat", "wb");
-    if (file == NULL)
-    {
-        perror("Error al abrir el archivo binario para guardar los datos");
-        return;
-    }
-
-    fwrite(&total_usuarios_roles, sizeof(int), 1, file);
-    fwrite(usuarios_roles, sizeof(Usuario_Rol), total_usuarios_roles, file);
-    fclose(file);
-}
-
-void guardarUsuariosPermisosBin()
-{
-    FILE *file = fopen("../src/ArchivosBinarios/usuarios_permisos.dat", "wb");
-    if (file == NULL)
-    {
-        perror("Error al abrir el archivo binario para guardar los datos");
-        return;
-    }
-
-    fwrite(&total_usuarios_permisos, sizeof(int), 1, file);
-    fwrite(usuarios_permisos, sizeof(Usuario_Permiso), total_usuarios_permisos, file);
-    fclose(file);
 }
