@@ -79,6 +79,9 @@ Este proyecto incluye una implementación en C para la gestión de los siguiente
 
 - El acceso se realiza a través de una interfaz de administración (`pepe@gmail.com`), utilizando la contraseña (`pepe`) donde pueden existir datos precargados para la simulación.
 
+### Informe del Proyecto
+
+Para más detalles, puedes consultar el informe completo del proyecto en el siguiente enlace: [Informe del Proyecto](https://docs.google.com/document/d/1AE7nNhvakHhWrZKG7mZJe2-avnCGdyutocNUxQ0mqEA/edit?usp=sharing)
 
 ## Instalación
 
