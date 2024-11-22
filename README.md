@@ -6,7 +6,7 @@
 
 ## Visión General
 
-Fútbol RMS es una aplicación web gratuita diseñada para colegios que permite gestionar múltiples torneos de fútbol. El objetivo es facilitar la organización y seguimiento de los torneos internos, promoviendo así la participación deportiva entre los estudiantes.
+Fútbol RMS es una aplicación gratuita diseñada para colegios que permite gestionar múltiples torneos de fútbol. El objetivo es facilitar la organización y seguimiento de los torneos internos, promoviendo así la participación deportiva entre los estudiantes.
 
 ## Objetivos
 
@@ -67,17 +67,17 @@ Este proyecto incluye una implementación en C para la gestión de los siguiente
    - Facilita la inscripción de jugadores y su asociación a equipos.
 
 4. **ABM de Roles**
-   - Permite crear, buscar, modificar y eliminar roles de usuario.
+   - Permite listar y buscar roles de usuario.
 
 5. **ABM de Permisos**
-   - Permite crear, buscar, modificar y eliminar permisos asociados a los roles.
+   - Permite listar y buscar permisos asociados a los roles.
 
 6. **ABM de Equipos**
    - Gestiona la creación y modificación de equipos, asignándolos a los torneos correspondientes.
 
 ### Acceso al Sistema
 
-- El acceso se realiza a través de una interfaz de administración (`admin-admin`), donde pueden existir datos precargados para la simulación.
+- El acceso se realiza a través de una interfaz de administración (`pepe@gmail.com`), utilizando la contraseña (`pepe`) donde pueden existir datos precargados para la simulación.
 
 
 ## Instalación
