@@ -68,6 +68,12 @@ typedef struct
 {
     int id_rol;
     int id_permiso;
+} Rol_Permiso;
+
+typedef struct
+{
+    int id_rol;
+    int id_permiso;
 } Role_Permiso;
 
 typedef struct

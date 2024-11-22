@@ -1,4 +1,4 @@
 1;Crear;Permiso para crear;01/01/2022
 2;Leer;Permiso para leer;01/01/2022
 3;Actualizar;Permiso para actualizar;01/01/2022
-4;Eliminar;Permiso para eliminar;01/01/
+4;Eliminar;Permiso para eliminar;01/01/2022

@@ -17,6 +17,10 @@ char *archivo_permisos_txt = "../src/ArchivosDeTexto/permisos.txt";
 char *archivo_permisos_bin = "../src/ArchivosBinarios/permisos.dat";
 char *archivo_equipos_txt = "../src/ArchivosDeTexto/equipos.txt";
 char *archivo_equipos_bin = "../src/ArchivosBinarios/equipos.dat";
+char *archivo_usuarios_roles_txt = "../src/ArchivosDeTexto/usuarios_roles.txt";
+char *archivo_usuarios_roles_bin = "../src/ArchivosBinarios/usuarios_roles.dat";
+char *archivo_roles_permisos_txt = "../src/ArchivosDeTexto/roles_permisos.txt";
+char *archivo_roles_permisos_bin = "../src/ArchivosBinarios/roles_permisos.dat";
 
 #define MAX_USUARIOS 100
 #define MAX_JUGADORES 100
@@ -24,6 +28,8 @@ char *archivo_equipos_bin = "../src/ArchivosBinarios/equipos.dat";
 #define MAX_PERMISOS 100
 #define MAX_USUARIOS_JUGADORES 100
 #define MAX_EQUIPOS 100
+#define MAX_ROLES_PERMISOS 100
+#define MAX_USUARIOS_ROLES 100
 
 Usuario usuarios[MAX_USUARIOS];
 Jugador jugadores[MAX_JUGADORES];
@@ -31,6 +37,8 @@ Rol roles[MAX_ROLES];
 Permiso permisos[MAX_PERMISOS];
 Usuario_Jugador usuarios_jugadores[MAX_USUARIOS_JUGADORES];
 Equipo equipos[MAX_EQUIPOS];
+Rol_Permiso roles_permisos[MAX_ROLES_PERMISOS];
+Usuario_Rol usuarios_roles[MAX_USUARIOS_ROLES];
 
 int total_usuarios = 0;
 int total_jugadores = 0;
@@ -38,6 +46,8 @@ int total_roles = 0;
 int total_permisos = 0;
 int total_usuarios_jugadores = 0;
 int total_equipos = 0;
+int total_roles_permisos = 0;
+int total_usuarios_roles = 0;
 
 void menuPrincipal(int id_rol);
 void iniciarSesion();
@@ -47,6 +57,21 @@ void cargarDatosJugadores();
 void cargarDatosRoles();
 void cargarDatosPermisos();
 void cargarDatosEquipos();
+void cargarDatosRolesPermisos();
+void cargarDatosUsuariosRoles();
+void guardarRolesBin();
+void guardarPermisosBin();
+void cargarRolesDesdeTxt();
+void cargarPermisosDesdeTxt();
+void guardarUsuariosRolesBin();
+void guardarRolesPermisosBin();
+void cargarUsuariosRolesDesdeTxt();
+void cargarRolesPermisosDesdeTxt();
+void listarRoles();
+void listarPermisos();
+void mostrarUsuariosConRol(int id_rol);
+void mostrarUsuariosConPermiso(int id_permiso);
+void asignarPermisosLectura(int id_usuario);
 
 // guarda datos
 void guardarUsuariosBin();
@@ -61,6 +86,7 @@ void cargarEquiposDesdeTxt();
 void imprimirEquipos();
 
 int obtenerRolUsuario(int id_usuario);
+int tienePermiso(int id_usuario, int id_permiso);
 // abm USUARIO
 void imprimirUsuarios();
 void agregarUsuario();
@@ -83,20 +109,6 @@ void imprimirPosicionesDisponibles();
 void imprimirUsuariosDisponibles();
 void listarJugadoresCompletos();
 
-// ABM PERMISO
-void agregarPermiso();
-void buscarPermiso();
-void modificarPermiso();
-void eliminarPermiso();
-void abmPermisos();
-
-// ABM ROLES
-void abmRoles();
-void agregarRol();
-void buscarRol();
-void modificarRol();
-void eliminarRol();
-
 // ABM EQUIPOS
 void menuEquiposABM();
 void agregarEquipo();
@@ -114,6 +126,8 @@ void agregarUsuarioJugador(int id_usuario, int id_jugador);
 int esUsuarioJugador(int id_usuario);
 int asignarNumeroDeJugador();
 
+#define ROL_ADMIN 1
+
 int main()
 {
     cargarDatosUsuarios();
@@ -121,6 +135,8 @@ int main()
     cargarDatosRoles();
     cargarDatosPermisos();
     cargarDatosEquipos();
+    cargarDatosRolesPermisos();
+    cargarDatosUsuariosRoles();
 
     imprimirUsuarios();
     imprimirJugadores();
@@ -341,12 +357,11 @@ void imprimirUsuarios()
 }
 int obtenerRolUsuario(int id_usuario)
 {
-    // Aqui deberias implementar la logica para obtener el rol del usuario
-    for (int i = 0; i < total_usuarios; i++)
+    for (int i = 0; i < total_usuarios_roles; i++)
     {
-        if (usuarios[i].id_usuario == id_usuario)
+        if (usuarios_roles[i].id_usuario == id_usuario)
         {
-            return 1; // Supongamos que el ID 1 es Admin
+            return usuarios_roles[i].id_rol;
         }
     }
     return -1; // Retornar -1 si no se encuentra el rol
@@ -390,46 +405,230 @@ void cargarDatosJugadores()
 }
 void cargarDatosRoles()
 {
-    FILE *file = fopen(archivo_roles_txt, "r");
-    if (file == NULL)
-    {
-        printf("Error al abrir el archivo de roles.\n");
-        return;
-    }
+    FILE *file_bin = fopen(archivo_roles_bin, "rb");
 
-    while (fscanf(file, "%d;%[^;];%[^;];%d/%d/%d",
-                  &roles[total_roles].id_rol,
-                  roles[total_roles].nombre_rol,
-                  roles[total_roles].descripcion,
-                  &roles[total_roles].fecha_creacion.dia,
-                  &roles[total_roles].fecha_creacion.mes,
-                  &roles[total_roles].fecha_creacion.anio) != EOF)
+    if (file_bin != NULL)
     {
-        total_roles++;
+        if (fread(&total_roles, sizeof(int), 1, file_bin) != 1)
+        {
+            printf("Error al leer el total de roles desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        if (total_roles > MAX_ROLES)
+        {
+            printf("Error: El archivo binario contiene más roles de los permitidos (%d).\n", MAX_ROLES);
+            fclose(file_bin);
+            return;
+        }
+
+        if (fread(roles, sizeof(Rol), total_roles, file_bin) != (size_t)total_roles)
+        {
+            printf("Error al leer los datos de roles desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        fclose(file_bin);
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_roles_bin);
     }
-    fclose(file);
+    else
+    {
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarRolesDesdeTxt();
+    }
 }
 
 void cargarDatosPermisos()
 {
-    FILE *file = fopen(archivo_permisos_txt, "r");
-    if (file == NULL)
+    FILE *file_bin = fopen(archivo_permisos_bin, "rb");
+
+    if (file_bin != NULL)
     {
-        printf("Error al abrir el archivo de permisos.\n");
+        if (fread(&total_permisos, sizeof(int), 1, file_bin) != 1)
+        {
+            printf("Error al leer el total de permisos desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        if (total_permisos > MAX_PERMISOS)
+        {
+            printf("Error: El archivo binario contiene más permisos de los permitidos (%d).\n", MAX_PERMISOS);
+            fclose(file_bin);
+            return;
+        }
+
+        if (fread(permisos, sizeof(Permiso), total_permisos, file_bin) != (size_t)total_permisos)
+        {
+            printf("Error al leer los datos de permisos desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        fclose(file_bin);
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_permisos_bin);
+    }
+    else
+    {
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarPermisosDesdeTxt();
+    }
+}
+
+void guardarRolesBin()
+{
+    FILE *file_bin = fopen(archivo_roles_bin, "wb");
+    if (file_bin == NULL)
+    {
+        perror("Error al abrir el archivo binario para guardar los datos");
         return;
     }
 
-    while (fscanf(file, "%d;%[^;];%[^;];%d/%d/%d",
-                  &permisos[total_permisos].id_permiso,
-                  permisos[total_permisos].nombre_permiso,
-                  permisos[total_permisos].descripcion,
-                  &permisos[total_permisos].fecha_creacion.dia,
-                  &permisos[total_permisos].fecha_creacion.mes,
-                  &permisos[total_permisos].fecha_creacion.anio) != EOF)
+    if (fwrite(&total_roles, sizeof(int), 1, file_bin) != 1)
     {
-        total_permisos++;
+        printf("Error al guardar el total de roles en el archivo binario.\n");
+        fclose(file_bin);
+        return;
     }
-    fclose(file);
+
+    if (fwrite(roles, sizeof(Rol), total_roles, file_bin) != (size_t)total_roles)
+    {
+        printf("Error al guardar los datos de roles en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_roles_bin);
+    fclose(file_bin);
+}
+
+void guardarPermisosBin()
+{
+    FILE *file_bin = fopen(archivo_permisos_bin, "wb");
+    if (file_bin == NULL)
+    {
+        perror("Error al abrir el archivo binario para guardar los datos");
+        return;
+    }
+
+    if (fwrite(&total_permisos, sizeof(int), 1, file_bin) != 1)
+    {
+        printf("Error al guardar el total de permisos en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    if (fwrite(permisos, sizeof(Permiso), total_permisos, file_bin) != (size_t)total_permisos)
+    {
+        printf("Error al guardar los datos de permisos en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_permisos_bin);
+    fclose(file_bin);
+}
+
+void cargarRolesDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_roles_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_roles_txt);
+        return;
+    }
+
+    total_roles = 0; // Reiniciar el contador de roles
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Rol temp;
+        if (sscanf(linea, "%d;%99[^;];%99[^;];%d/%d/%d",
+                   &temp.id_rol,
+                   temp.nombre_rol,
+                   temp.descripcion,
+                   &temp.fecha_creacion.dia,
+                   &temp.fecha_creacion.mes,
+                   &temp.fecha_creacion.anio) == 6)
+        {
+            if (total_roles < MAX_ROLES)
+            {
+                roles[total_roles++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de roles (%d).\n", MAX_ROLES);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea de roles: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_roles > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_roles_txt);
+        guardarRolesBin();
+    }
+    else
+    {
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_roles_txt);
+    }
+}
+
+void cargarPermisosDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_permisos_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_permisos_txt);
+        return;
+    }
+
+    total_permisos = 0; // Reiniciar el contador de permisos
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Permiso temp;
+        if (sscanf(linea, "%d;%99[^;];%99[^;];%d/%d/%d",
+                   &temp.id_permiso,
+                   temp.nombre_permiso,
+                   temp.descripcion,
+                   &temp.fecha_creacion.dia,
+                   &temp.fecha_creacion.mes,
+                   &temp.fecha_creacion.anio) == 6)
+        {
+            if (total_permisos < MAX_PERMISOS)
+            {
+                permisos[total_permisos++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de permisos (%d).\n", MAX_PERMISOS);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea de permisos: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_permisos > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_permisos_txt);
+        guardarPermisosBin();
+    }
+    else
+    {
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_permisos_txt);
+    }
 }
 void iniciarSesion()
 {
@@ -448,6 +647,12 @@ void iniciarSesion()
             if (strcmp(usuarios[i].email, email) == 0 && strcmp(usuarios[i].contrasenia, contrasenia) == 0)
             {
                 printf("Inicio de sesion exitoso. Bienvenido, %s!\n", usuarios[i].nombre);
+                int rol_usuario = obtenerRolUsuario(usuarios[i].id_usuario);
+                if (rol_usuario == -1)
+                {
+                    printf("Error: No se pudo determinar el rol del usuario.\n");
+                    return;
+                }
                 menuPrincipal(usuarios[i].id_usuario);
                 return;
             }
@@ -460,28 +665,31 @@ void iniciarSesion()
 }
 
 void menuPrincipal(int id_usuario)
-
 {
-    int session_active = 1;                          // Indicar que la sesion esta activa
-    int rol_usuario = obtenerRolUsuario(id_usuario); // Obtener rol del usuario
+    int session_active = 1;
+    int rol_usuario = obtenerRolUsuario(id_usuario);
 
     do
     {
         printf("\n=== MENU PRINCIPAL ===\n");
-        if (rol_usuario == 1)
-        { // Supongamos que el rol 1 es Admin
-            printf("1. ABM Usuarios\n");
-            printf("2. ABM Jugadores\n");
-            printf("3. ABM Roles\n");
-            printf("4. ABM Permisos\n");
-            printf("5. ABM Equipos\n");
-            printf("6. Salir\n");
-        }
-        else
+        printf("1. Ver Usuarios\n");
+        if (rol_usuario == ROL_ADMIN)
         {
-            printf("1. Ver Mis Datos\n");
-            printf("2. Salir\n");
+            printf("2. ABM Usuarios\n");
         }
+        printf("3. Ver Jugadores\n");
+        if (rol_usuario == ROL_ADMIN)
+        {
+            printf("4. ABM Jugadores\n");
+        }
+        printf("5. Ver Roles\n");
+        printf("6. Ver Permisos\n");
+        printf("7. Ver Equipos\n");
+        if (rol_usuario == ROL_ADMIN)
+        {
+            printf("8. ABM Equipos\n");
+        }
+        printf("9. Salir\n");
 
         int opcion;
         printf("Seleccione una opcion: ");
@@ -490,68 +698,176 @@ void menuPrincipal(int id_usuario)
         switch (opcion)
         {
         case 1:
-            if (rol_usuario == 1)
-            {
-                menuUsuariosABM(); // Llamar a la funcion ABM Usuarios
-            }
-            else
-            {
-                mostrarDatosUsuario(id_usuario);
-            }
+            imprimirUsuarios();
             break;
         case 2:
-            if (rol_usuario == 1)
+            if (rol_usuario == ROL_ADMIN)
             {
-                menuJugadoresABM(); // Llamar a la funcion ABM Jugadores
+                menuUsuariosABM();
             }
             else
             {
-                printf("Saliendo...\n");
-                session_active = 0; // Cerrar sesion
+                printf("No tiene permiso para esta opcion.\n");
             }
             break;
         case 3:
-            if (rol_usuario == 1)
-            {
-                abmRoles(); // Llamar a la funcion ABM Roles
-            }
-            else
-            {
-                printf("Saliendo...\n");
-                session_active = 0; // Cerrar sesion
-            }
+            imprimirJugadores();
             break;
         case 4:
-            if (rol_usuario == 1)
+            if (rol_usuario == ROL_ADMIN)
             {
-                abmPermisos(); // Llamar a la funcion ABM Permisos
+                menuJugadoresABM();
             }
             else
             {
-                printf("Saliendo...\n");
-                session_active = 0; // Cerrar sesion
+                printf("No tiene permiso para esta opcion.\n");
             }
             break;
         case 5:
-            if (rol_usuario == 1)
+            listarRoles();
+            break;
+        case 6:
+            listarPermisos();
+            break;
+        case 7:
+            imprimirEquipos();
+            break;
+        case 8:
+            if (rol_usuario == ROL_ADMIN)
             {
-                menuEquiposABM(); // Llamar a la funcion ABM Equipos
+                menuEquiposABM();
             }
             else
             {
-                printf("Saliendo...\n");
-                session_active = 0; // Cerrar sesion
+                printf("No tiene permiso para esta opcion.\n");
             }
             break;
-        case 6:
+        case 9:
             printf("Saliendo...\n");
-            session_active = 0; // Cerrar sesion
+            session_active = 0;
             break;
         default:
             printf("Opcion no valida. Intente de nuevo.\n");
             break;
         }
     } while (session_active); // Mantener el menu hasta que se cierre la sesion
+}
+
+void listarRoles()
+{
+    printf("\nRoles registrados:\n");
+    printf("-------------------------------------------------------------\n");
+    printf("| ID   | Nombre del Rol      | Descripcion                  |\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < total_roles; i++)
+    {
+        printf("| %-4d | %-19s | %-28s |\n",
+               roles[i].id_rol,
+               roles[i].nombre_rol,
+               roles[i].descripcion);
+    }
+
+    printf("-------------------------------------------------------------\n");
+
+    int id_rol;
+    printf("Ingrese el ID del rol para ver los usuarios asociados (0 para volver): ");
+    scanf("%d", &id_rol);
+
+    if (id_rol != 0)
+    {
+        mostrarUsuariosConRol(id_rol);
+    }
+}
+
+void listarPermisos()
+{
+    printf("\nPermisos registrados:\n");
+    printf("-------------------------------------------------------------\n");
+    printf("| ID   | Nombre del Permiso  | Descripcion                  |\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < total_permisos; i++)
+    {
+        printf("| %-4d | %-19s | %-28s |\n",
+               permisos[i].id_permiso,
+               permisos[i].nombre_permiso,
+               permisos[i].descripcion);
+    }
+
+    printf("-------------------------------------------------------------\n");
+
+    int id_permiso;
+    printf("Ingrese el ID del permiso para ver los usuarios asociados (0 para volver): ");
+    scanf("%d", &id_permiso);
+
+    if (id_permiso != 0)
+    {
+        mostrarUsuariosConPermiso(id_permiso);
+    }
+}
+
+void mostrarUsuariosConRol(int id_rol)
+{
+    printf("\nUsuarios con el rol ID %d:\n", id_rol);
+    printf("-------------------------------------------------------------\n");
+    printf("| ID Usuario | Nombre      | Apellido    | Email                  |\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < total_usuarios_roles; i++)
+    {
+        if (usuarios_roles[i].id_rol == id_rol)
+        {
+            for (int j = 0; j < total_usuarios; j++)
+            {
+                if (usuarios[j].id_usuario == usuarios_roles[i].id_usuario)
+                {
+                    printf("| %-10d | %-11s | %-11s | %-22s |\n",
+                           usuarios[j].id_usuario,
+                           usuarios[j].nombre,
+                           usuarios[j].apellido,
+                           usuarios[j].email);
+                }
+            }
+        }
+    }
+
+    printf("-------------------------------------------------------------\n");
+}
+
+void mostrarUsuariosConPermiso(int id_permiso)
+{
+    printf("\nUsuarios con el permiso ID %d:\n", id_permiso);
+    printf("-------------------------------------------------------------\n");
+    printf("| ID Usuario | Nombre      | Apellido    | Email                  |\n");
+    printf("-------------------------------------------------------------\n");
+
+    for (int i = 0; i < total_roles_permisos; i++)
+    {
+        if (roles_permisos[i].id_permiso == id_permiso)
+        {
+            int id_rol = roles_permisos[i].id_rol;
+            for (int j = 0; j < total_usuarios_roles; j++)
+            {
+                if (usuarios_roles[j].id_rol == id_rol)
+                {
+                    for (int k = 0; k < total_usuarios; k++)
+                    {
+                        if (usuarios[k].id_usuario == usuarios_roles[j].id_usuario)
+                        {
+                            printf("| %-10d | %-11s | %-11s | %-22s |\n",
+                                   usuarios[k].id_usuario,
+                                   usuarios[k].nombre,
+                                   usuarios[k].apellido,
+                                   usuarios[k].email);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    printf("-------------------------------------------------------------\n");
 }
 
 // --------------------------------------- ABM USUARIOS ---------------------------------------
@@ -674,6 +990,7 @@ void agregarUsuario()
     usuarios[total_usuarios++] = nuevo;
 
     guardarUsuarioEnBinario(nuevo);
+    asignarPermisosLectura(nuevo.id_usuario);
 
     printf("\n=== Usuario Agregado ===\n");
     printf("ID: %d\n", nuevo.id_usuario);
@@ -691,6 +1008,23 @@ void agregarUsuario()
     if (opcion == 's' || opcion == 'S')
     {
         agregarJugador(nuevo.id_usuario);
+    }
+}
+
+void asignarPermisosLectura(int id_usuario)
+{
+    Usuario_Rol nuevo_usuario_rol;
+    nuevo_usuario_rol.id_usuario = id_usuario;
+    nuevo_usuario_rol.id_rol = 2; // Asignar rol de "Usuario" por defecto
+
+    if (total_usuarios_roles < MAX_USUARIOS_ROLES)
+    {
+        usuarios_roles[total_usuarios_roles++] = nuevo_usuario_rol;
+        guardarUsuariosRolesBin();
+    }
+    else
+    {
+        printf("Limite de usuarios_roles alcanzado.\n");
     }
 }
 
@@ -916,9 +1250,9 @@ void menuJugadoresABM()
 void listarJugadoresCompletos()
 {
     printf("\nJugadores registrados (informacion completa):\n");
-    printf("------------------------------------------------------------------------------------------------------\n");
-    printf("| ID   | Nombre         | Apellido         | Nombre Equipo | Posicion      | Numero de Camiseta | Fecha      |\n");
-    printf("------------------------------------------------------------------------------------------------------\n");
+    printf("------------------------------------------------------------------------------------------------------------------\n");
+    printf("| ID   | Nombre         | Apellido         | Nombre Equipo | Posicion         | Numero de Camiseta  | Fecha      |\n");
+    printf("------------------------------------------------------------------------------------------------------------------\n");
 
     for (int i = 0; i < total_jugadores; i++)
     {
@@ -957,7 +1291,7 @@ void listarJugadoresCompletos()
                jugadores[i].fecha_creacion.anio);
     }
 
-    printf("------------------------------------------------------------------------------------------------------\n");
+    printf("------------------------------------------------------------------------------------------------------------------\n");
 }
 
 void agregarJugador(int id_usuario)
@@ -1222,285 +1556,6 @@ void eliminarJugador()
         }
     }
     printf("Jugador no encontrado.\n");
-}
-
-// --------------------------------------- ABM ROLES ---------------------------------------
-
-void abmRoles()
-{
-    // Similar a las funciones anteriores para manejar roles
-    // Implementar ABM Roles aqui (Agregar, Buscar, Modificar, Eliminar)
-
-    int opcion;
-    do
-    {
-        printf("\n=== ABM Roles ===\n");
-        printf("1. Agregar Rol\n");
-        printf("2. Buscar Rol\n");
-        printf("3. Modificar Rol\n");
-        printf("4. Eliminar Rol\n");
-        printf("5. Volver al Menu Principal\n");
-        printf("Seleccione una opcion: ");
-        scanf("%d", &opcion);
-
-        switch (opcion)
-        {
-        case 1:
-            agregarRol();
-            break;
-        case 2:
-            buscarRol();
-            break;
-        case 3:
-            modificarRol();
-            break;
-        case 4:
-            eliminarRol();
-            break;
-        case 5:
-            printf("Volviendo al menu principal...\n");
-            break;
-        default:
-            printf("Opcion no valida. Intente de nuevo.\n");
-            break;
-        }
-    } while (opcion != 5);
-}
-
-void agregarRol()
-{
-    if (total_roles < 100)
-    { // Comprobar limite de jugadores
-        Rol nuevo;
-        printf("Ingrese el ID del rol: ");
-        scanf("%d", &nuevo.id_rol);
-        printf("Ingrese el nombre del rol: ");
-        scanf("%s", nuevo.nombre_rol);
-        printf("Ingrese la descripcion del rol: ");
-        scanf("%s", nuevo.descripcion);
-        time_t t = time(NULL);
-        struct tm tm = *localtime(&t);
-        nuevo.fecha_creacion.dia = tm.tm_mday,
-        nuevo.fecha_creacion.mes = tm.tm_mon + 1,
-        nuevo.fecha_creacion.anio = tm.tm_year + 1900;
-
-        // Agregar el nuevo jugador al arreglo
-        roles[total_roles++] = nuevo;
-        printf("Rol agregado con exito.\n");
-    }
-    else
-    {
-        printf("Limite de roles alcanzado.\n");
-    }
-}
-
-void buscarRol()
-{
-    int id_rol;
-    printf("Ingrese el ID del rol a buscar: ");
-    scanf("%d", &id_rol);
-    for (int i = 0; i < total_roles; i++)
-    {
-        if (roles[i].id_rol == id_rol)
-        {
-            printf("\n=== Rol Encontrado ===\n");
-            printf("Nombre del rol: %s\n", roles[i].nombre_rol);
-            printf("Descripcion del rol: %s\n", roles[i].descripcion);
-            printf("Fecha de Creacion: %02d/%02d/%04d\n",
-                   roles[i].fecha_creacion.dia,
-                   roles[i].fecha_creacion.mes,
-                   roles[i].fecha_creacion.anio);
-        }
-        return;
-    }
-}
-
-void modificarRol()
-{
-    int id_rol;
-    printf("Ingrese el ID del rol a modificar: ");
-    scanf("%d", &id_rol);
-    for (int i = 0; i < total_roles; i++)
-    {
-        if (roles[i].id_rol == id_rol)
-        {
-            printf("Ingrese el nuevo ID de rol (actual: %d): ", roles[i].id_rol);
-            scanf("%d", &roles[i].id_rol);
-            printf("Ingrese el nuevo nombre de rol (actual: %s): ", roles[i].nombre_rol);
-            scanf("%d", &jugadores[i].id_equipo);
-            printf("Ingrese la nueva descripcion del rol (actual: %s): ", roles[i].descripcion);
-            scanf("%s", jugadores[i].posicion);
-            time_t t = time(NULL);
-            struct tm tm = *localtime(&t);
-            jugadores[i].fecha_creacion.dia = tm.tm_mday,
-            jugadores[i].fecha_creacion.mes = tm.tm_mon + 1,
-            jugadores[i].fecha_creacion.anio = tm.tm_year + 1900;
-            printf("Rol modificado con exito.\n");
-            return;
-        }
-    }
-    printf("Rol no encontrado.\n");
-}
-
-void eliminarRol()
-{
-    int id_rol;
-    printf("Ingrese el ID del rol a eliminar: ");
-    scanf("%d", &id_rol);
-    for (int i = 0; i < total_roles; i++)
-    {
-        if (roles[i].id_rol == id_rol)
-        {
-            for (int j = i; j < total_roles - 1; j++)
-            {
-                roles[j] = roles[j + 1]; // Mover los elementos hacia atras
-            }
-            total_roles--; // Disminuir el contador de roles
-            printf("Rol eliminado con exito.\n");
-            return;
-        }
-    }
-    printf("Rol no encontrado.\n");
-}
-
-// --------------------------------------- ABM PERMISOS ---------------------------------------
-
-void abmPermisos()
-{
-    // Similar a las funciones anteriores para manejar permisos
-    // Implementar ABM Permisos aqui (Agregar, Buscar, Modificar, Eliminar)
-    int opcion;
-    do
-    {
-        printf("\n=== ABM Permisos ===\n");
-        printf("1. Agregar Permiso\n");
-        printf("2. Buscar Permiso\n");
-        printf("3. Modificar Permiso\n");
-        printf("4. Eliminar Permiso\n");
-        printf("5. Volver al Menu Principal\n");
-        printf("Seleccione una opcion: ");
-        scanf("%d", &opcion);
-
-        switch (opcion)
-        {
-        case 1:
-            agregarPermiso();
-            break;
-        case 2:
-            buscarPermiso();
-            break;
-        case 3:
-            modificarPermiso();
-            break;
-        case 4:
-            eliminarPermiso();
-            break;
-        case 5:
-            printf("Volviendo al menu principal...\n");
-            break;
-        default:
-            printf("Opcion no valida. Intente de nuevo.\n");
-            break;
-        }
-    } while (opcion != 5);
-}
-void agregarPermiso()
-{
-    if (total_permisos < 100)
-    { // Comprobar limite de jugadores
-        Permiso nuevo;
-        printf("Ingrese el ID del permiso: ");
-        scanf("%d", &nuevo.id_permiso);
-        printf("Ingrese el nombre del permiso: ");
-        scanf("%s", nuevo.nombre_permiso);
-        printf("Ingrese la descripcion del permiso: ");
-        scanf("%s", nuevo.descripcion);
-        printf("Ingrese la fecha de creacion (dd/mm/yyyy): ");
-        time_t t = time(NULL);
-        struct tm tm = *localtime(&t);
-        nuevo.fecha_creacion.dia = tm.tm_mday,
-        nuevo.fecha_creacion.mes = tm.tm_mon + 1,
-        nuevo.fecha_creacion.anio = tm.tm_year + 1900;
-
-        // Agregar el nuevo permiso al arreglo
-        permisos[total_permisos++] = nuevo;
-        printf("Permiso agregado con exito.\n");
-    }
-    else
-    {
-        printf("Limite de permisos alcanzado.\n");
-    }
-}
-
-void buscarPermiso()
-{
-    int id_permiso;
-    printf("Ingrese el ID del permiso a buscar: ");
-    scanf("%d", &id_permiso);
-    for (int i = 0; i < total_permisos; i++)
-    {
-        if (permisos[i].id_permiso == id_permiso)
-        {
-            printf("\n=== Permiso Encontrado ===\n");
-            printf("Nombre del permiso: %s\n", permisos[i].nombre_permiso);
-            printf("Descripcion del permiso: %s\n", permisos[i].descripcion);
-            printf("Fecha de Creacion: %02d/%02d/%04d\n",
-                   permisos[i].fecha_creacion.dia,
-                   permisos[i].fecha_creacion.mes,
-                   permisos[i].fecha_creacion.anio);
-        }
-        return;
-    }
-}
-
-void modificarPermiso()
-{
-    int id_permiso;
-    printf("Ingrese el ID del permiso a modificar: ");
-    scanf("%d", &id_permiso);
-    for (int i = 0; i < total_permisos; i++)
-    {
-        if (permisos[i].id_permiso == id_permiso)
-        {
-            printf("Ingrese el nuevo ID de permiso (actual: %d): ", permisos[i].id_permiso);
-            scanf("%d", &permisos[i].id_permiso);
-            printf("Ingrese el nuevo nombre de permiso (actual: %s): ", permisos[i].nombre_permiso);
-            scanf("%s", permisos[i].nombre_permiso);
-            printf("Ingrese la nueva descripcion del permiso (actual: %s): ", permisos[i].descripcion);
-            scanf("%s", permisos[i].descripcion);
-            printf("Ingrese la nueva fecha de creacion (actual: %02d/%02d/%04d): ",
-                   permisos[i].fecha_creacion.dia,
-                   permisos[i].fecha_creacion.mes,
-                   permisos[i].fecha_creacion.anio);
-            scanf("%d/%d/%d", &permisos[i].fecha_creacion.dia,
-                  &permisos[i].fecha_creacion.mes,
-                  &permisos[i].fecha_creacion.anio);
-            printf("Permiso modificado con exito.\n");
-            return;
-        }
-    }
-    printf("Permiso no encontrado.\n");
-}
-
-void eliminarPermiso()
-{
-    int id_permiso;
-    printf("Ingrese el ID del permiso a eliminar: ");
-    scanf("%d", &id_permiso);
-    for (int i = 0; i < total_permisos; i++)
-    {
-        if (permisos[i].id_permiso == id_permiso)
-        {
-            for (int j = i; j < total_permisos - 1; j++)
-            {
-                permisos[j] = permisos[j + 1]; // Mover los elementos hacia atras
-            }
-            total_permisos--; // Disminuir el contador de permisos
-            printf("Permiso eliminado con exito.\n");
-            return;
-        }
-    }
-    printf("Permiso no encontrado.\n");
 }
 
 // --------------------------------------- ABM EQUIPOS ---------------------------------------
@@ -2048,5 +2103,239 @@ void imprimirJugadores()
     }
 
     fclose(file);
-    printf("----------------------------------------------------------------------------------------------\n");
+    printf("------------------------------------------------------------------------------------\n");
+}
+
+void cargarDatosRolesPermisos()
+{
+    FILE *file_bin = fopen(archivo_roles_permisos_bin, "rb");
+
+    if (file_bin != NULL)
+    {
+        if (fread(&total_roles_permisos, sizeof(int), 1, file_bin) != 1)
+        {
+            printf("Error al leer el total de roles_permisos desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        if (total_roles_permisos > MAX_ROLES_PERMISOS)
+        {
+            printf("Error: El archivo binario contiene más roles_permisos de los permitidos (%d).\n", MAX_ROLES_PERMISOS);
+            fclose(file_bin);
+            return;
+        }
+
+        if (fread(roles_permisos, sizeof(Rol_Permiso), total_roles_permisos, file_bin) != (size_t)total_roles_permisos)
+        {
+            printf("Error al leer los datos de roles_permisos desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        fclose(file_bin);
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_roles_permisos_bin);
+    }
+    else
+    {
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarRolesPermisosDesdeTxt();
+    }
+}
+
+void cargarDatosUsuariosRoles()
+{
+    FILE *file_bin = fopen(archivo_usuarios_roles_bin, "rb");
+
+    if (file_bin != NULL)
+    {
+        if (fread(&total_usuarios_roles, sizeof(int), 1, file_bin) != 1)
+        {
+            printf("Error al leer el total de usuarios_roles desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        if (total_usuarios_roles > MAX_USUARIOS_ROLES)
+        {
+            printf("Error: El archivo binario contiene más usuarios_roles de los permitidos (%d).\n", MAX_USUARIOS_ROLES);
+            fclose(file_bin);
+            return;
+        }
+
+        if (fread(usuarios_roles, sizeof(Usuario_Rol), total_usuarios_roles, file_bin) != (size_t)total_usuarios_roles)
+        {
+            printf("Error al leer los datos de usuarios_roles desde el archivo binario.\n");
+            fclose(file_bin);
+            return;
+        }
+
+        fclose(file_bin);
+        printf("Datos cargados desde el archivo binario '%s' con éxito.\n", archivo_usuarios_roles_bin);
+    }
+    else
+    {
+        printf("Archivo binario no encontrado. Cargando datos desde el archivo de texto...\n");
+        cargarUsuariosRolesDesdeTxt();
+    }
+}
+
+void guardarUsuariosRolesBin()
+{
+    FILE *file_bin = fopen(archivo_usuarios_roles_bin, "wb");
+    if (file_bin == NULL)
+    {
+        perror("Error al abrir el archivo binario para guardar los datos");
+        return;
+    }
+
+    if (fwrite(&total_usuarios_roles, sizeof(int), 1, file_bin) != 1)
+    {
+        printf("Error al guardar el total de usuarios_roles en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    if (fwrite(usuarios_roles, sizeof(Usuario_Rol), total_usuarios_roles, file_bin) != (size_t)total_usuarios_roles)
+    {
+        printf("Error al guardar los datos de usuarios_roles en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_usuarios_roles_bin);
+    fclose(file_bin);
+}
+
+void guardarRolesPermisosBin()
+{
+    FILE *file_bin = fopen(archivo_roles_permisos_bin, "wb");
+    if (file_bin == NULL)
+    {
+        perror("Error al abrir el archivo binario para guardar los datos");
+        return;
+    }
+
+    if (fwrite(&total_roles_permisos, sizeof(int), 1, file_bin) != 1)
+    {
+        printf("Error al guardar el total de roles_permisos en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    if (fwrite(roles_permisos, sizeof(Rol_Permiso), total_roles_permisos, file_bin) != (size_t)total_roles_permisos)
+    {
+        printf("Error al guardar los datos de roles_permisos en el archivo binario.\n");
+        fclose(file_bin);
+        return;
+    }
+
+    printf("Datos guardados en el archivo binario '%s' con éxito.\n", archivo_roles_permisos_bin);
+    fclose(file_bin);
+}
+
+void cargarUsuariosRolesDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_usuarios_roles_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_usuarios_roles_txt);
+        return;
+    }
+
+    total_usuarios_roles = 0; // Reiniciar el contador de usuarios_roles
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Usuario_Rol temp;
+        if (sscanf(linea, "%d;%d", &temp.id_usuario, &temp.id_rol) == 2)
+        {
+            if (total_usuarios_roles < MAX_USUARIOS_ROLES)
+            {
+                usuarios_roles[total_usuarios_roles++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de usuarios_roles (%d).\n", MAX_USUARIOS_ROLES);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea de usuario_roles: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_usuarios_roles > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_usuarios_roles_txt);
+        guardarUsuariosRolesBin();
+    }
+    else
+    {
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_usuarios_roles_txt);
+    }
+}
+
+void cargarRolesPermisosDesdeTxt()
+{
+    FILE *file_txt = fopen(archivo_roles_permisos_txt, "r");
+    if (file_txt == NULL)
+    {
+        printf("No se pudo abrir el archivo de texto '%s'.\n", archivo_roles_permisos_txt);
+        return;
+    }
+
+    total_roles_permisos = 0; // Reiniciar el contador de roles_permisos
+    char linea[256];
+    while (fgets(linea, sizeof(linea), file_txt))
+    {
+        Rol_Permiso temp;
+        if (sscanf(linea, "%d;%d", &temp.id_rol, &temp.id_permiso) == 2)
+        {
+            if (total_roles_permisos < MAX_ROLES_PERMISOS)
+            {
+                roles_permisos[total_roles_permisos++] = temp;
+            }
+            else
+            {
+                printf("Se alcanzó el límite máximo de roles_permisos (%d).\n", MAX_ROLES_PERMISOS);
+                break;
+            }
+        }
+        else
+        {
+            printf("Formato incorrecto en la línea roles_permisos: %s", linea);
+        }
+    }
+    fclose(file_txt);
+
+    if (total_roles_permisos > 0)
+    {
+        printf("Datos cargados desde el archivo de texto '%s' con éxito.\n", archivo_roles_permisos_txt);
+        guardarRolesPermisosBin();
+    }
+    else
+    {
+        printf("No se encontraron datos válidos en el archivo de texto '%s'.\n", archivo_roles_permisos_txt);
+    }
+}
+int tienePermiso(int id_usuario, int id_permiso)
+{
+    for (int i = 0; i < total_usuarios_roles; i++)
+    {
+        if (usuarios_roles[i].id_usuario == id_usuario)
+        {
+            int id_rol = usuarios_roles[i].id_rol;
+            for (int j = 0; j < total_roles_permisos; j++)
+            {
+                if (roles_permisos[j].id_rol == id_rol && roles_permisos[j].id_permiso == id_permiso)
+                {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
