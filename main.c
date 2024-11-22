@@ -610,13 +610,13 @@ void menuUsuariosABM()
             eliminarUsuario();
             break;
         case 6:
-            {
-                int id_usuario;
-                printf("Ingrese el ID del usuario: ");
-                scanf("%d", &id_usuario);
-                mostrarDatosUsuarioJugador(id_usuario);
-            }
-            break;
+        {
+            int id_usuario;
+            printf("Ingrese el ID del usuario: ");
+            scanf("%d", &id_usuario);
+            mostrarDatosUsuarioJugador(id_usuario);
+        }
+        break;
         case 7:
             printf("Volviendo al menu principal...\n");
             break;
@@ -884,13 +884,13 @@ void menuJugadoresABM()
         switch (opcion)
         {
         case 1:
-            {
-                int id_usuario;
-                printf("Ingrese el ID del usuario para asociar al jugador: ");
-                scanf("%d", &id_usuario);
-                agregarJugador(id_usuario);
-            }
-            break;
+        {
+            int id_usuario;
+            printf("Ingrese el ID del usuario para asociar al jugador: ");
+            scanf("%d", &id_usuario);
+            agregarJugador(id_usuario);
+        }
+        break;
         case 2:
             buscarJugador();
             break;
@@ -1695,7 +1695,8 @@ void menuEquiposABM()
         printf("2. Buscar Equipo\n");
         printf("3. Modificar Equipo\n");
         printf("4. Eliminar Equipo\n");
-        printf("5. Volver al Menu Principal\n");
+        printf("5. Listar Equipos\n");
+        printf("6. Volver al Menu Principal\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opcion);
 
@@ -1714,29 +1715,32 @@ void menuEquiposABM()
             eliminarEquipo();
             break;
         case 5:
+            imprimirEquipos();
+            break;
+        case 6:
             printf("Volviendo al menu principal...\n");
             break;
         default:
             printf("Opcion no valida. Intente de nuevo.\n");
             break;
         }
-    } while (opcion != 5);
+    } while (opcion != 6);
 }
 
 void agregarEquipo()
 {
-    if (total_equipos >= 100)
+    if (total_equipos >= MAX_EQUIPOS)
     {
         printf("Limite de equipos alcanzado.\n");
         return;
     }
 
     Equipo nuevo;
-    printf("Ingrese el ID del equipo: ");
-    scanf("%d", &nuevo.id_equipo);
+    imprimirEquipos();
+    printf("El ID del nuevo equipo es: %d\n", total_equipos + 1);
     printf("Ingrese el nombre del equipo: ");
     scanf("%s", nuevo.nombre_equipo);
-
+    nuevo.id_equipo = total_equipos + 1;
     equipos[total_equipos++] = nuevo;
     guardarEquipoEnBinario(nuevo);
     printf("Equipo agregado con exito.\n");
