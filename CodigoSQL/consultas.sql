@@ -21,7 +21,7 @@ JOIN
 JOIN 
     Equipo e_visitante ON p.equipo_visitante = e_visitante.id_equipo
 WHERE 
-    eq.nombre = 'Águilas de Oro'
+    eq.nombre = 'Leones de la Ciudad'
 ORDER BY 
     p.fecha_partido;
 
